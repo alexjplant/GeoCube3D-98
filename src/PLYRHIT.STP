@@ -1,0 +1,48 @@
+[Common]
+SampleFrequency= 11025
+Oscillators= 2
+
+[Oscillator 0]
+Enabled=-1
+Comment=
+StartT= 0
+EndT= 2000
+StartA= 1
+EndA= .1
+StartF= 100
+EndF= 50
+CurveShape0= .1
+CurveShape1= .6918
+CurveShape2= .1202
+NoiseBW= .5
+NoiseChangeRate= 0
+
+[Oscillator 1]
+Enabled=-1
+Comment=
+StartT= 250
+EndT= 750
+StartA= 1
+EndA= .1
+StartF= 100
+EndF= 50
+CurveShape0= .1
+CurveShape1= .6918
+CurveShape2= .1202
+NoiseBW= .5
+NoiseChangeRate= 0
+
+[Oscillator 2]
+Enabled=-1
+Comment=
+StartT= 1000
+EndT= 1500
+StartA= .5
+EndA= .1
+StartF= 100
+EndF= 50
+CurveShape0= .1
+CurveShape1= .6918
+CurveShape2= .1202
+NoiseBW= .5
+NoiseChangeRate= 0

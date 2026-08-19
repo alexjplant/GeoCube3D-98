@@ -1,0 +1,651 @@
+-2005532667
+DDERR_ALREADYINITIALIZED
+The object has already been initialized.
+-2005532098
+DDERR_BLTFASTCANTCLIP
+A DirectDrawClipper object is attached to a source surface that has passed into a call to the IDirectDrawSurface2::BltFast method. 
+-2005532662
+DDERR_CANNOTATTACHSURFACE
+A surface cannot be attached to another requested surface. 
+-2005532652
+DDERR_CANNOTDETACHSURFACE
+A surface cannot be detached from another requested surface. 
+-2005532087
+DDERR_CANTCREATEDC
+Windows cannot create any more device contexts (DCs). 
+-2005532089
+DDERR_CANTDUPLICATE
+Primary and 3D surfaces, or surfaces that are implicitly created, cannot be duplicated. 
+-2005532237
+DDERR_CANTLOCKSURFACE
+Access to this surface is refused because an attempt was made to lock the primary surface without DCI support.
+-2005532032
+DDERR_CANTPAGELOCK
+An attempt to page lock a surface failed. Page lock will not work on a display-memory surface or an emulated primary surface. 
+-2005532012
+DDERR_CANTPAGEUNLOCK
+An attempt to page unlock a surface failed. Page unlock will not work on a display-memory surface or an emulated primary surface. 
+-2005532105
+DDERR_CLIPPERISUSINGHWND
+An attempt was made to set a clip list for a DirectDrawClipper object that is already monitoring a window handle. 
+-2005532272
+DDERR_COLORKEYNOTSET
+No source color key is specified for this operation. 
+-2005532632
+DDERR_CURRENTLYNOTAVAIL
+No support is currently available.
+-2005532052
+DDERR_DCALREADYCREATED
+A device context (DC) has already been returned for this surface. Only one DC can be retrieved for each surface. 
+-2005532110
+DDERR_DIRECTDRAWALREADYCREATED
+A DirectDraw object representing this driver has already been created for this process. 
+-2005532617
+DDERR_EXCEPTION
+An exception was encountered while performing the requested operation. 
+-2005532091
+DDERR_EXCLUSIVEMODEALREADYSET
+An attempt was made to set the cooperative level when it was already set to exclusive. 
+-2147467259
+DDERR_GENERIC
+There is an undefined error condition. 
+-2005532582
+DDERR_HEIGHTALIGN
+The height of the provided rectangle is not a multiple of the required alignment.
+-2005532101
+DDERR_HWNDALREADYSET
+The DirectDraw cooperative level window handle has already been set. It cannot be reset while the process has surfaces or palettes created. 
+-2005532102
+DDERR_HWNDSUBCLASSED
+DirectDraw is prevented from restoring state because the DirectDraw cooperative level window handle has been subclassed. 
+-2005532084
+DDERR_IMPLICITLYCREATED
+The surface cannot be restored because it is an implicitly created surface. 
+-2005532577
+DDERR_INCOMPATIBLEPRIMARY
+The primary surface creation request does not match with the existing primary surface. 
+-2005532572
+DDERR_INVALIDCAPS
+One or more of the capability bits passed to the callback function are incorrect.
+-2005532562
+DDERR_INVALIDCLIPLIST
+DirectDraw does not support the provided clip list. 
+-2005532111
+DDERR_INVALIDDIRECTDRAWGUID
+The globally unique identifier (GUID) passed to the DirectDrawCreate function is not a valid DirectDraw driver identifier. 
+-2005532552
+DDERR_INVALIDMODE
+DirectDraw does not support the requested mode. 
+-2005532542
+DDERR_INVALIDOBJECT
+DirectDraw received a pointer that was an invalid DirectDraw object. 
+-2147024809
+DDERR_INVALIDPARAMS
+One or more of the parameters passed to the method are incorrect. 
+-2005532527
+DDERR_INVALIDPIXELFORMAT
+The pixel format was invalid as specified.
+-2005532093
+DDERR_INVALIDPOSITION
+The position of the overlay on the destination is no longer legal. 
+-2005532522
+DDERR_INVALIDRECT
+The provided rectangle was invalid. 
+-2005532080
+DDERR_INVALIDSURFACETYPE
+The requested operation could not be performed because the surface was of the wrong type. 
+-2005532512
+DDERR_LOCKEDSURFACES
+One or more surfaces are locked, causing the failure of the requested operation. 
+-2005532502
+DDERR_NO3D
+No 3D hardware or emulation is present.
+-2005532492
+DDERR_NOALPHAHW
+No alpha acceleration hardware is present or available, causing the failure of the requested operation. 
+-2005532097
+DDERR_NOBLTHW
+No blitter hardware is present. 
+-2005532467
+DDERR_NOCLIPLIST
+No clip list is available. 
+-2005532104
+DDERR_NOCLIPPERATTACHED
+No DirectDrawClipper object is attached to the surface object. 
+-2005532462
+DDERR_NOCOLORCONVHW
+The operation cannot be carried out because no color-conversion hardware is present or available. 
+-2005532457
+DDERR_NOCOLORKEY
+The surface does not currently have a color key.
+-2005532452
+DDERR_NOCOLORKEYHW
+The operation cannot be carried out because there is no hardware support for the destination color key. 
+-2005532460
+DDERR_NOCOOPERATIVELEVELSET
+A create function is called without the IDirectDraw2::SetCooperativeLevel method being called. 
+-2005532086
+DDERR_NODC
+No DC has ever been created for this surface. 
+-2005532096
+DDERR_NODDROPSHW
+No DirectDraw raster operation (ROP) hardware is available. 
+-2005532109
+DDERR_NODIRECTDRAWHW
+Hardware-only DirectDraw object creation is not possible; the driver does not support any hardware.
+-2005532450
+DDERR_NODIRECTDRAWSUPPORT
+DirectDraw support is not possible with the current display driver. 
+-2005532107
+DDERR_NOEMULATION
+Software emulation is not available. 
+-2005532447
+DDERR_NOEXCLUSIVEMODE
+The operation requires the application to have exclusive mode, but the application does not have exclusive mode. 
+-2005532442
+DDERR_NOFLIPHW
+Flipping visible surfaces is not supported. 
+-2005532432
+DDERR_NOGDI
+No GDI is present. 
+-2005532103
+DDERR_NOHWND
+Clipper notification requires a window handle, or no window handle has been previously set as the cooperative level window handle.
+-2005532081
+DDERR_NOMIPMAPHW
+The operation cannot be carried out because no mipmap texture mapping hardware is present or available. 
+-2005532422
+DDERR_NOMIRRORHW
+The operation cannot be carried out because no mirroring hardware is present or available. 
+-2005532094
+DDERR_NOOVERLAYDEST
+The IDirectDrawSurface2::GetOverlayPosition method is called on an overlay that the IDirectDrawSurface2::UpdateOverlay method has not been called on to establish a destination. 
+-2005532412
+DDERR_NOOVERLAYHW
+The operation cannot be carried out because no overlay hardware is present or available. 
+-2005532100
+DDERR_NOPALETTEATTACHED
+No palette object is attached to this surface.
+-2005532099
+DDERR_NOPALETTEHW
+There is no hardware support for 16- or 256-color palettes. 
+-2005532392
+DDERR_NORASTEROPHW
+The operation cannot be carried out because no appropriate raster operation hardware is present or available. 
+-2005532382
+DDERR_NOROTATIONHW
+The operation cannot be carried out because no rotation hardware is present or available. 
+-2005532362
+DDERR_NOSTRETCHHW
+The operation cannot be carried out because there is no hardware support for stretching. 
+-2005532356
+DDERR_NOT4BITCOLOR
+The DirectDrawSurface object is not using a 4-bit color palette and the requested operation requires a 4-bit color palette. 
+-2005532355
+DDERR_NOT4BITCOLORINDEX
+The DirectDrawSurface object is not using a 4-bit color index palette and the requested operation requires a 4-bit color index palette.
+-2005532352
+DDERR_NOT8BITCOLOR
+The DirectDrawSurface object is not using an 8-bit color palette and the requested operation requires an 8-bit color palette. 
+-2005532092
+DDERR_NOTAOVERLAYSURFACE
+An overlay component is called for a non-overlay surface. 
+-2005532342
+DDERR_NOTEXTUREHW
+The operation cannot be carried out because no texture-mapping hardware is present or available. 
+-2005532090
+DDERR_NOTFLIPPABLE
+An attempt has been made to flip a surface that cannot be flipped. 
+-2005532417
+DDERR_NOTFOUND
+The requested item was not found.
+-2147221008
+DDERR_NOTINITIALIZED
+An attempt was made to call an interface method of a DirectDraw object created by CoCreateInstance before the object was initialized. 
+-2005532088
+DDERR_NOTLOCKED
+An attempt is made to unlock a surface that was not locked. 
+-2005531992
+DDERR_NOTPAGELOCKED
+An attempt is made to page unlock a surface with no outstanding page locks. 
+-2005532083
+DDERR_NOTPALETTIZED
+The surface being used is not a palette-based surface. 
+-2005532337
+DDERR_NOVSYNCHW
+The operation cannot be carried out because there is no hardware support for vertical blank synchronized operations. 
+-2005532332
+DDERR_NOZBUFFERHW
+The operation to create a z-buffer in display memory or to perform a blit using a z-buffer cannot be carried out because there is no hardware support for z-buffers.
+-2005532322
+DDERR_NOZOVERLAYHW
+The overlay surfaces cannot be z-layered based on the z-order because the hardware does not support z-ordering of overlays. 
+-2005532312
+DDERR_OUTOFCAPS
+The hardware needed for the requested operation has already been allocated. 
+-2147024882
+DDERR_OUTOFMEMORY
+DirectDraw does not have enough memory to perform the operation. 
+-2005532292
+DDERR_OUTOFVIDEOMEMORY
+DirectDraw does not have enough display memory to perform the operation. 
+-2005532290
+DDERR_OVERLAYCANTCLIP
+The hardware does not support clipped overlays.
+-2005532288
+DDERR_OVERLAYCOLORKEYONLYONEACTIVE
+An attempt was made to have more than one color key active on an overlay. 
+-2005532095
+DDERR_OVERLAYNOTVISIBLE
+The IDirectDrawSurface2::GetOverlayPosition method is called on a hidden overlay. 
+-2005532285
+DDERR_PALETTEBUSY
+Access to this palette is refused because the palette is locked by another thread. 
+-2005532108
+DDERR_PRIMARYSURFACEALREADYEXISTS
+This process has already created a primary surface. 
+-2005532106
+DDERR_REGIONTOOSMALL
+The region passed to the IDirectDrawClipper::GetClipList method is too small. 
+-2005532262
+DDERR_SURFACEALREADYATTACHED
+An attempt was made to attach a surface to another surface to which it is already attached.
+-2005532252
+DDERR_SURFACEALREADYDEPENDENT
+An attempt was made to make a surface a dependency of another surface to which it is already dependent. 
+-2005532242
+DDERR_SURFACEBUSY
+Access to the surface is refused because the surface is locked by another thread. 
+-2005532232
+DDERR_SURFACEISOBSCURED
+Access to the surface is refused because the surface is obscured. 
+-2005532222
+DDERR_SURFACELOST
+Access to the surface is refused because the surface memory is gone. The DirectDrawSurface object representing this surface should have the IDirectDrawSurface2::Restore method called on it. 
+-2005532212
+DDERR_SURFACENOTATTACHED
+The requested surface is not attached.
+-2005532202
+DDERR_TOOBIGHEIGHT
+The height requested by DirectDraw is too large. 
+-2005532192
+DDERR_TOOBIGSIZE
+The size requested by DirectDraw is too large. However, the individual height and width are OK. 
+-2005532182
+DDERR_TOOBIGWIDTH
+The width requested by DirectDraw is too large. 
+-2147467263
+DDERR_UNSUPPORTED
+The operation is not supported. 
+-2005532162
+DDERR_UNSUPPORTEDFORMAT
+The FourCC format requested is not supported by DirectDraw. 
+-2005532152
+DDERR_UNSUPPORTEDMASK
+The bitmask in the pixel format requested is not supported by DirectDraw.
+-2005532082
+DDERR_UNSUPPORTEDMODE
+The display is currently in an unsupported mode. 
+-2005532135
+DDERR_VERTICALBLANKINPROGRESS
+A vertical blank is in progress. 
+-2005532132
+DDERR_WASSTILLDRAWING
+The previous blit operation that is transferring information to or from this surface is incomplete. 
+-2005532085
+DDERR_WRONGMODE
+This surface cannot be restored because it was created in a different mode. 
+-2005532112
+DDERR_XALIGN
+The provided rectangle was not horizontally aligned on a required boundary.
+-2005401590
+DSERR_ALLOCATED
+The request failed because resources, such as a priority level, were already in use by another caller.
+-2005401470
+DSERR_ALREADYINITIALIZED
+The object is already initialized.
+-2005401500
+DSERR_BADFORMAT
+The specified wave format is not supported.
+-2005401450
+DSERR_BUFFERLOST
+The buffer memory has been lost and must be restored. 
+-2005401570
+DSERR_CONTROLUNAVAIL
+The control (volume, pan, and so forth) requested by the caller is not available. 
+-2147467259
+DSERR_GENERIC
+An undetermined error occurred inside the DirectSound subsystem. 
+-2005401550
+DSERR_INVALIDCALL
+This function is not valid for the current state of this object. 
+-2147024809
+DSERR_INVALIDPARAM
+An invalid parameter was passed to the returning function. 
+-2147221232
+DSERR_NOAGGREGATION
+The object does not support aggregation.
+-2005401480
+DSERR_NODRIVER
+No sound driver is available for use. 
+-2005401440
+DSERR_OTHERAPPHASPRIO
+This value is obsolete and is not used. 
+-2147024882
+DSERR_OUTOFMEMORY
+The DirectSound subsystem could not allocate sufficient memory to complete the caller's request. 
+-2005401530
+DSERR_PRIOLEVELNEEDED
+The caller does not have the priority level required for the function to succeed. 
+-2005401430
+DSERR_UNINITIALIZED
+The IDirectSound::Initialize method has not been called or has not been called successfully before other methods were called. 
+-2147467263
+DSERR_UNSUPPORTED
+The request completed successfully.
+-2005467126
+DPERR_ACCESSDENIED
+The session is full or an incorrect password was supplied. 
+-2005467116
+DPERR_ACTIVEPLAYERS
+The requested operation cannot be performed because there are existing active players. 
+-2005467131
+DPERR_ALREADYINITIALIZED
+This object is already initialized. 
+-2005466116
+DPERR_APPNOTSTARTED
+The application has not been started yet. 
+-2005466136
+DPERR_BUFFERTOOLARGE
+The data buffer is too large to store. 
+-2005467106
+DPERR_BUFFERTOOSMALL
+The supplied buffer is not large enough to contain the requested data. 
+-2005466866
+DPERR_BUSY
+The DirectPlay message queue is full. 
+-2005467096
+DPERR_CANTADDPLAYER
+The player cannot be added to the session. 
+-2005467086
+DPERR_CANTCREATEGROUP
+A new group cannot be created. 
+-2005467076
+DPERR_CANTCREATEPLAYER
+A new player cannot be created. 
+-2005466126
+DPERR_CANTCREATEPROCESS
+Cannot start the application. 
+-2005467066
+DPERR_CANTCREATESESSION
+A new session cannot be created. 
+-2005467056
+DPERR_CAPSNOTAVAILABLEYET
+The capabilities of the DirectPlay object have not been determined yet. This error will occur if the DirectPlay object is implemented on a connectivity solution that requires polling to determine available bandwidth and latency. 
+-2005467046
+DPERR_EXCEPTION
+An exception occurred when processing the request. 
+-2147467259
+DPERR_GENERIC
+An undefined error condition occurred. 
+-2005467016
+DPERR_INVALIDFLAGS
+The flags passed to this function are invalid. 
+-2005466106
+DPERR_INVALIDINTERFACE
+The interface parameter is invalid. 
+-2005467006
+DPERR_INVALIDOBJECT
+The DirectPlay object pointer is invalid. 
+-2147024809
+DPERR_INVALIDPARAMS
+One or more of the parameters passed to the function are invalid. 
+-2005466986
+DPERR_INVALIDPLAYER
+The player ID is not recognized as a valid player ID for this game session. 
+-2005466976
+DPERR_NOCAPS
+The communication link that DirectPlay is attempting to use is not capable of this function. 
+-2005466966
+DPERR_NOCONNECTION
+No communication link was established.
+-2147467262
+DPERR_NOINTERFACE
+The interface is not supported. 
+-2005466946
+DPERR_NOMESSAGES
+There are no messages to be received. 
+-2005466936
+DPERR_NONAMESERVERFOUND
+No name server (host) could be found or created. A host must exist to create a player. 
+-2005466926
+DPERR_NOPLAYERS
+There are no active players in the session. 
+-2005466916
+DPERR_NOSESSIONS
+There are no existing sessions for this game. 
+-2005466066
+DPERR_NOTLOBBIED
+Returned by the IDirectPlayLobby::Connect method if the application was not started by using the IDirectPlayLobby::RunApplication method. 
+-2147024882
+DPERR_OUTOFMEMORY
+There is insufficient memory to perform the requested operation. 
+-2005466836
+DPERR_PLAYERLOST
+A player has lost the connection to the session. 
+-2005466906
+DPERR_SENDTOOBIG
+The message buffer passed to the IDirectPlay2::Send method is larger than allowed. 
+-2005466826
+DPERR_SESSIONLOST
+The connection to the session has been lost. 
+-2005466896
+DPERR_TIMEOUT
+The operation could not be completed in the specified time.
+-2005466886
+DPERR_UNAVAILABLE
+The requested function is not available at this time. 
+-2005466086
+DPERR_UNKNOWNAPPLICATION
+An unknown application was specified. 
+-2147467263
+DPERR_UNSUPPORTED
+The function is not available in this implementation. 
+-2005466856
+DPERR_USERCANCEL
+The user canceled the connection process during a call to the IDirectPlay2::Open method.
+-2005531889
+D3DRMERR_BADALLOC
+Out of memory.
+-2005531883
+D3DRMERR_BADDEVICE
+Device is not compatible with renderer.
+-2005531884
+D3DRMERR_BADFILE
+Data file is corrupt. 
+-2005531881
+D3DRMERR_BADMAJORVERSION
+Bad DLL major version. 
+-2005531880
+D3DRMERR_BADMINORVERSION
+Bad DLL minor version. 
+-2005531891
+D3DRMERR_BADOBJECT
+Object expected in argument. 
+-2005531890
+D3DRMERR_BADTYPE
+Bad argument type passed. 
+-2005531882
+D3DRMERR_BADVALUE
+Bad argument value passed.
+-2005531888
+D3DRMERR_FACEUSED
+Face already used in a mesh.
+-2005531885
+D3DRMERR_FILENOTFOUND
+File cannot be opened. 
+-2005531886
+D3DRMERR_NOTDONEYET
+Unimplemented.
+-2005531887
+D3DRMERR_NOTFOUND
+Object not found in specified place.
+-2005531879
+D3DRMERR_UNABLETOEXECUTE
+Unable to carry out procedure.
+-2005531972
+D3DERR_BADMAJORVERSION
+Immediate Mode Bad DLL Major Version.
+-2005531971
+D3DERR_BADMINORVERSION
+Immedate Mode Bad DLL Minor Version.
+-2005531955
+D3DERR_EXECUTE_CLIPPED_FAILED
+Immediate Mode Clip Failed.
+-2005531962
+D3DERR_EXECUTE_CREATE_FAILED
+Immediate Mode Create Failed.
+-2005531961
+D3DERR_EXECUTE_DESTROY_FAILED
+Immediate Mode Destroy Failed.
+-2005531956
+D3DERR_EXECUTE_FAILED
+Immediate Mode Execute Failed.
+-2005531960
+D3DERR_EXECUTE_LOCK_FAILED
+Immediate Mode Lock Failed.
+-2005531958
+D3DERR_EXECUTE_LOCKED
+Immediate Mode Execute Locked Failed.
+-2005531957
+D3DERR_EXECUTE_NOT_LOCKED
+Immediate Mode Execute Not Locked Failed.
+-2005531959
+D3DERR_EXECUTE_UNLOCK_FAILED
+Immediate Mode Execute Unlock Failed.
+-2005531922
+D3DERR_LIGHT_SET_FAILED
+Immediate Mode Light Set Failed.
+-2005531932
+D3DERR_MATERIAL_CREATE_FAILED
+Immediate Mode Material Create Failed.
+-2005531931
+D3DERR_MATERIAL_DESTROY_FAILED
+Immediate Mode Material Destory Failed.
+-2005531929
+D3DERR_MATERIAL_GETDATA_FAILED
+Immediate Mode Material GetData Failed.
+-2005531930
+D3DERR_MATERIAL_SETDATA_FAILED
+Immediate Mode Material SetData Failed.
+-2005531942
+D3DERR_MATRIX_CREATE_FAILED
+Immediate Mode Matrix Create Failed.
+-2005531941
+D3DERR_MATRIX_DESTROY_FAILED
+Immediate Mode Maxtrix Destroy Failed.
+-2005531939
+D3DERR_MATRIX_GETDATA_FAILED
+Immediate Mode Matrix GetData Failed.
+-2005531940
+D3DERR_MATRIX_SETDATA_FAILED
+Immediate Mode Matrix SetData Failed.
+-2005531910
+D3DERR_SCENE_BEGIN_FAILED
+Immediate Mode Scene Begin Failed.
+-2005531909
+D3DERR_SCENE_END_FAILED
+Immediate Mode Scene End Failed.
+-2005531912
+D3DERR_SCENE_IN_SCENE
+Immediate Mode In Scene Failed.
+-2005531911
+D3DERR_SCENE_NOT_IN_SCENE
+Immediate Mode Scene Not In Scene Failed.
+-2005531938
+D3DERR_SETVIEWPORTDATA_FAILED
+Immediate Mode Set ViewPort Data Failed.
+-2005531951
+D3DERR_TEXTURE_CREATE_FAILED
+Immediate Mode Create Texture Failed.
+-2005531950
+D3DERR_TEXTURE_DESTROY_FAILED
+Immediate Mode Destroy Texture Failed.
+-2005531943
+D3DERR_TEXTURE_GETSURF_FAILED
+Immediate Mode Get Texture Surface Failed.
+-2005531947
+D3DERR_TEXTURE_LOAD_FAILED
+Immediate Mode Load Texture Failed.
+-2005531949
+D3DERR_TEXTURE_LOCK_FAILED
+Immediate Mode Lock Texture Failed.
+-2005531945
+D3DERR_TEXTURE_LOCKED
+Immediate Mode Texture Locked Failure.
+-2005531952
+D3DERR_TEXTURE_NO_SUPPORT
+Immediate Mode Texture Not Supported Failure.
+-2005531944
+D3DERR_TEXTURE_NOT_LOCKED
+Immediate Mode Texture Not Locked Failure.
+-2005531946
+D3DERR_TEXTURE_SWAP_FAILED
+Immediate Mode Swap Texture Failed.
+-2005531948
+D3DERR_TEXTURE_UNLOCK_FAILED
+Immediate Mode Unlock Texture Failed.
+166
+JOYERR_NOCANDO
+The joystick driver cannot update the device information from the registry. 
+167
+JOYERR_UNPLUGGED
+The specified joystick is not connected to the computer.
+2
+MMSYSERR_BADDEVICEID
+The specified joystick identifier is invalid.
+11
+MMSYSERR_INVALPARAM
+An invalid parameter was passed. 
+6
+MMSYSERR_NODRIVER
+The joystick driver is not present.
+-3
+DSETUPERR_BADSOURCESIZE
+A file's size could not be verified or was incorrect.
+-4
+DSETUPERR_BADSOURCETIME
+A file's date and time could not be verified or were incorrect. 
+-1
+DSETUPERR_BADWINDOWSVERSION
+DirectX does not support the Windows version on the system. 
+-8
+DSETUPERR_CANTFINDDIR
+The setup program could not find the working directory. 
+-7
+DSETUPERR_CANTFINDINF
+A required .inf file could not be found. 
+-9
+DSETUPERR_INTERNAL
+An internal error occurred. 
+-5
+DSETUPERR_NOCOPY
+A file's version could not be verified or was incorrect. 
+-13
+DSETUPERR_NOTPREINSTALLEDONNT
+The version of Windows NT on the system does not have all the DirectX 3 components installed. 
+-6
+DSETUPERR_OUTOFDISKSPACE
+The setup program ran out of disk space during installation. 
+-2
+DSETUPERR_SOURCEFILENOTFOUND
+One of the required source files could not be found. 
+-11
+DSETUPERR_UNKNOWNOS
+The operating system on your system is not currently supported. 
+-12
+DSETUPERR_USERHITCANCEL
+The Cancel button was pressed before the application was fully installed.
+100
+ENDOFERR_CONSTLIST
+
