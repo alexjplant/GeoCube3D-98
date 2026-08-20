@@ -1,0 +1,245 @@
+#ifndef GEOCUBE_CORE_GAME_WORLD_H
+#define GEOCUBE_CORE_GAME_WORLD_H
+
+#include "core/math.h"
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <random>
+#include <string>
+#include <vector>
+
+namespace geocube::core {
+
+inline constexpr double kFixedStepSeconds = 1.0 / 60.0;
+inline constexpr double kMaximumFrameSeconds = 0.25;
+inline constexpr int kMaximumCatchUpSteps = 8;
+inline constexpr int kStartingLives = 3;
+inline constexpr std::size_t kMaximumBullets = 16;
+inline constexpr double kPlayerHitDelaySeconds = 8.0;
+
+enum class GameState {
+  Loading,
+  Running,
+  Paused,
+  PlayerHit,
+  GameOver,
+  HighScore,
+};
+
+enum class Action : std::uint8_t {
+  AimUp,
+  AimDown,
+  AimLeft,
+  AimRight,
+  ThrustForward,
+  ThrustBackward,
+  ThrustLeft,
+  ThrustRight,
+  Fire,
+  Shield,
+  Pause,
+  FullStop,
+  HighScores,
+  Quit,
+  ZoomIn,
+  ZoomOut,
+  Confirm,
+  Back,
+  Count,
+};
+
+constexpr std::size_t actionIndex(Action action)
+{
+  return static_cast<std::size_t>(action);
+}
+
+class InputState final {
+public:
+  bool isHeld(Action action) const { return m_held[actionIndex(action)]; }
+  bool wasPressed(Action action) const
+  {
+    return m_pressed[actionIndex(action)];
+  }
+
+  void setHeld(Action action, bool held)
+  {
+    m_held[actionIndex(action)] = held;
+  }
+
+  void press(Action action)
+  {
+    m_held[actionIndex(action)] = true;
+    m_pressed[actionIndex(action)] = true;
+  }
+
+  void release(Action action)
+  {
+    m_held[actionIndex(action)] = false;
+  }
+
+  void clearPressed()
+  {
+    m_pressed.fill(false);
+  }
+
+  void clear(Action action)
+  {
+    m_held[actionIndex(action)] = false;
+    m_pressed[actionIndex(action)] = false;
+  }
+
+  void reset()
+  {
+    m_held.fill(false);
+    m_pressed.fill(false);
+  }
+
+  bool anyPressed() const
+  {
+    for (bool pressed : m_pressed) {
+      if (pressed)
+        return true;
+    }
+    return false;
+  }
+
+private:
+  std::array<bool, actionIndex(Action::Count)> m_held{};
+  std::array<bool, actionIndex(Action::Count)> m_pressed{};
+};
+
+enum class RockSize : int {
+  Large = 200,
+  Medium = 100,
+  Small = 50,
+};
+
+enum class RockType : std::uint8_t {
+  Cube = 0,
+  Rod = 1,
+  Sphere = 2,
+  Cone = 3,
+  Rock = 4,
+};
+
+struct LevelDefinition {
+  Vec3 background;
+  int largeRocks = 0;
+  RockType largeType = RockType::Cube;
+  int mediumRocks = 0;
+  RockType mediumType = RockType::Cube;
+  int smallRocks = 0;
+  RockType smallType = RockType::Cube;
+  const char* music = "";
+};
+
+const std::array<LevelDefinition, 5>& levelDefinitions();
+int rockSizeUnits(RockSize size);
+
+struct PlayerState {
+  Vec3 position;
+  Vec3 direction{0.0f, 0.0f, 1.0f};
+  Vec3 up{0.0f, 1.0f, 0.0f};
+  Vec3 velocity;
+  bool shield = false;
+};
+
+struct Rock {
+  std::uint32_t id = 0;
+  Vec3 position;
+  Vec3 velocity;
+  RockSize size = RockSize::Large;
+  RockType type = RockType::Cube;
+  float radius = 0.0f;
+};
+
+enum class BulletState {
+  Active,
+  Exploding,
+};
+
+struct Bullet {
+  std::uint32_t id = 0;
+  Vec3 position;
+  Vec3 velocity;
+  float age = 0.0f;
+  BulletState state = BulletState::Active;
+};
+
+class GameWorld final {
+public:
+  explicit GameWorld(std::uint32_t randomSeed = 0x47504333u);
+
+  void startNewGame(std::string playerName = {}, int startingLevel = 0);
+  void previewLevel(int levelIndex);
+  void advance(double elapsedSeconds, const InputState& input);
+  void stepFixed(const InputState& input);
+
+  GameState state() const { return m_state; }
+  const PlayerState& player() const { return m_player; }
+  const std::vector<Rock>& rocks() const { return m_rocks; }
+  const std::vector<Bullet>& bullets() const { return m_bullets; }
+  const std::string& playerName() const { return m_playerName; }
+  const LevelDefinition& currentLevel() const;
+
+  int score() const { return m_score; }
+  int lives() const { return m_lives; }
+  int levelIndex() const { return m_levelIndex; }
+  int levelWrap() const { return m_levelWrap; }
+  int levelNumber() const { return m_levelIndex + 1 + m_levelWrap * 5; }
+  float fieldOfView() const { return m_fieldOfView; }
+  bool quitRequested() const { return m_quitRequested; }
+  double playerHitRemainingSeconds() const
+  {
+    return m_playerHitElapsed < kPlayerHitDelaySeconds
+               ? kPlayerHitDelaySeconds - m_playerHitElapsed
+               : 0.0;
+  }
+
+  // These operations are also the renderer-independent spawn interface used
+  // by level setup and deterministic gameplay tests.
+  std::uint32_t spawnRock(RockSize size, RockType type, Vec3 position,
+                          Vec3 velocity = {});
+  std::uint32_t spawnBullet(Vec3 position, Vec3 velocity);
+  void clearRocks();
+  void clearBullets();
+  void setPlayerPosition(Vec3 position) { m_player.position = position; }
+  void setPlayerVelocity(Vec3 velocity) { m_player.velocity = velocity; }
+
+private:
+  void setupLevel();
+  void advanceToNextLevel();
+  void updateRunning(const InputState& input);
+  void updatePlayerAim(const InputState& input);
+  void updatePlayerThrust(const InputState& input);
+  void updateBullets();
+  void splitRock(std::size_t rockIndex);
+  void handlePlayerCollision();
+  void handlePlayerHit();
+  Vec3 randomPosition();
+  Vec3 randomVelocity();
+  Vec3 randomOffset(float extent);
+  void normalizePlayerOrientation();
+
+  std::mt19937 m_random;
+  std::string m_playerName;
+  GameState m_state = GameState::Loading;
+  PlayerState m_player;
+  std::vector<Rock> m_rocks;
+  std::vector<Bullet> m_bullets;
+  std::uint32_t m_nextEntityId = 1;
+  int m_levelIndex = 0;
+  int m_levelWrap = 0;
+  int m_score = 0;
+  int m_lives = kStartingLives;
+  float m_fieldOfView = 0.9f;
+  double m_accumulator = 0.0;
+  double m_playerHitElapsed = 0.0;
+  bool m_quitRequested = false;
+};
+
+} // namespace geocube::core
+
+#endif

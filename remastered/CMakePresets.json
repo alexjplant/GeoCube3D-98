@@ -1,0 +1,73 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Remastered Debug",
+      "description": "Debug build using the documented SDL3 dependency configuration",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GEOCUBE_FETCH_SDL3": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Remastered Release",
+      "description": "Release build using the documented SDL3 dependency configuration",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GEOCUBE_FETCH_SDL3": "ON"
+      }
+    },
+    {
+      "name": "web",
+      "displayName": "Remastered Web Release",
+      "description": "Emscripten WebGL2 build for GitHub Pages",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/web",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "GEOCUBE_FETCH_SDL3": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "web",
+      "configurePreset": "web"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

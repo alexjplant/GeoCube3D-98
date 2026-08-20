@@ -1,0 +1,46 @@
+asset_path,source_path,format,status,notes
+models/ship.mesh,src/ship.x,GeoCube remastered mesh,converted adaptation,Renderer-ready fallback mesh derived from the legacy ship presentation; legacy XOF remains for reference.
+models/cube.mesh,src/cube.x,GeoCube remastered mesh,converted adaptation,Renderer-ready fallback mesh; legacy XOF remains for reference.
+models/ship.obj,src/ship.x,Wavefront OBJ,converted runtime model,Generated from the original binary XOF with geometry and material groups preserved.
+models/ship.mtl,src/ship.x,Wavefront MTL,converted runtime material,Preserves the original ship material diffuse colors.
+models/cube.x,dist/cube.x,Direct3D Retained Mode XOF,legacy reference,Remastered companion model is used by the renderer.
+models/ship.x,dist/ship.x,Direct3D Retained Mode XOF,legacy reference,Remastered companion model is used by the renderer; source/src/ship.x is also present.
+models/cube.obj,src/cube.x,Wavefront OBJ,converted runtime model,Generated from the original text XOF.
+models/cube.mtl,src/cube.x,Wavefront MTL,converted runtime material,Original cube material is white (1,1,1).
+models/jack.x,src/jack.x,Direct3D Retained Mode XOF,inventory copy,Random level model referenced by legacy gameplay.
+models/jack.obj,src/jack.x,Wavefront OBJ,converted runtime model,Generated from the original binary XOF.
+models/jack.mtl,src/jack.x,Wavefront MTL,converted runtime material,Preserves the original jack diffuse color.
+models/portal.x,src/portal.x,Direct3D Retained Mode XOF,inventory copy,Portal code is disabled under a legacy comment block.
+models/portal.obj,src/portal.x,Wavefront OBJ,converted optional model,Generated for the legacy optional portal path.
+models/portal.mtl,src/portal.x,Wavefront MTL,converted optional material,Generated alongside portal geometry.
+models/sphere3.x,src/sphere3.x,Direct3D Retained Mode XOF,inventory copy,Only referenced by SAVE_ME experimental code.
+models/sphere3.obj,src/sphere3.x,Wavefront OBJ,converted optional model,Generated for the legacy experimental path.
+models/sphere3.mtl,src/sphere3.x,Wavefront MTL,converted optional material,Generated alongside sphere3 geometry.
+models/pasta.obj,src/pasta.x,Wavefront OBJ,converted reference model,Generated for the remaining source model inventory.
+models/pasta.mtl,src/pasta.x,Wavefront MTL,converted reference material,Generated alongside pasta geometry.
+models/w.x,,Direct3D Retained Mode XOF,missing,Only referenced by SAVE_ME logo animation code; absent from src and dist.
+models/s.x,,Direct3D Retained Mode XOF,missing,Only referenced by SAVE_ME logo animation code; absent from src and dist.
+textures/bullet.bmp,dist/bullet.bmp,8-bit BMP,color-key source copy,Bullet decal; legacy color index 0 is transparent.
+textures/canvas.bmp,dist/canvas.bmp,8-bit BMP,color-key source copy,Legacy scene texture; src/canvas.bmp is also present.
+textures/explode.bmp,dist/explode.bmp,8-bit BMP,color-key source copy,Explosion decal; legacy color index 0 is transparent.
+textures/logo.bmp,src/logo.bmp,4-bit BMP,inventory copy,Main-menu logo resource referenced by Launch.rc.
+textures/head.bmp,src/head.bmp,8-bit BMP,inventory copy,Experimental SAVE_ME decal; not used by the active game path.
+audio/effects/fire.wav,dist/fire.wav,PCM WAV,inventory copy,Machine-gun effect.
+audio/effects/laser.wav,dist/laser.wav,PCM WAV,inventory copy,Laser effect.
+audio/effects/thrust.wav,dist/THRUST.WAV,PCM WAV,case-normalized copy,Legacy source uses lowercase thrust.wav while the file is uppercase.
+audio/effects/jump.wav,dist/JUMP.WAV,PCM WAV,case-normalized copy,Jump effect.
+audio/effects/land.wav,dist/LAND.WAV,PCM WAV,case-normalized copy,Landing effect.
+audio/effects/hit.wav,dist/HIT.WAV,PCM WAV,case-normalized copy,Rock collision effect.
+audio/effects/plyrhit.wav,dist/PLYRHIT.WAV,PCM WAV,case-normalized copy,Player collision effect.
+audio/effects/shldhit.wav,dist/SHLDHIT.WAV,PCM WAV,case-normalized copy,Shield collision effect.
+audio/effects/shield.wav,dist/SHIELD.WAV,PCM WAV,case-normalized copy,Shield loop.
+audio/effects/humm.wav,dist/Humm.wav,PCM WAV,case-normalized copy,Experimental 3D hum effect.
+audio/music/music.mid,dist/music.mid,MIDI,FluidSynth runtime,Level 1 music rendered with the bundled SC-55 SoundFont.
+audio/music/synth.mid,dist/synth.mid,MIDI,FluidSynth runtime,Level 2 music rendered with the bundled SC-55 SoundFont.
+audio/music/reggae.mid,dist/reggae.mid,MIDI,FluidSynth runtime,Level 3 music rendered with the bundled SC-55 SoundFont.
+audio/music/spin.mid,dist/spin.mid,MIDI,FluidSynth runtime,Level 4 music rendered with the bundled SC-55 SoundFont.
+audio/music/funk.mid,dist/funk.mid,MIDI,FluidSynth runtime,Level 5 music rendered with the bundled SC-55 SoundFont.
+audio/music/snare.mid,dist/snare.mid,MIDI,FluidSynth runtime,Pause/high-score music rendered with the bundled SC-55 SoundFont.
+audio/music/wierd.mid,dist/wierd.mid,MIDI,FluidSynth runtime,Game-over/level splash music rendered with the bundled SC-55 SoundFont.
+audio/music/Roland.SC-55.sf2,https://github.com/nitro-shoe/sc-55-soundfont/releases/download/v1.32/Roland.SC-55.sf2,SoundFont 2,downloaded runtime dependency,FluidSynth renders the legacy MIDI files with this Roland SC-55 bank.
+audio/music/*.ogg,assets/audio/music/*.mid,Ogg Vorbis,generated web runtime,Render with scripts/render-music.sh using the bundled SC-55 SoundFont; native builds continue to use MIDI.

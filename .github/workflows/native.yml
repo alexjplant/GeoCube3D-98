@@ -1,0 +1,40 @@
+name: Native Builds
+
+on:
+  push:
+    branches: [master, sdl-web]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config libgl1-mesa-dev libfluidsynth-dev libsndfile1-dev xvfb
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install cmake git pkg-config fluid-synth libsndfile
+      - name: Configure
+        working-directory: remastered
+        run: cmake --preset release
+      - name: Build
+        working-directory: remastered
+        run: cmake --build --preset release
+      - name: Test
+        working-directory: remastered
+        run: ctest --preset release
+      - name: Linux renderer smoke test
+        if: runner.os == 'Linux'
+        working-directory: remastered
+        run: SDL_AUDIODRIVER=dummy xvfb-run -a ./build/release/geocube3d --demo --frames 60

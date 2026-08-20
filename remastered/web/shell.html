@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GeoCube 3D Remastered</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; min-height: 100%; background: #050817; }
+    body { display: grid; place-items: center; font: 16px system-ui, sans-serif; }
+    main { width: min(100vw, 1100px); padding: 1rem; box-sizing: border-box; }
+    #canvas { display: block; width: 100%; aspect-ratio: 4 / 3; background: #02030b; border: 1px solid #303761; }
+    #status { color: #e9d94a; margin: 0.75rem 0; min-height: 1.4em; }
+    button { border: 1px solid #e9d94a; background: #131a3b; color: #fff; padding: 0.65rem 1rem; cursor: pointer; }
+    .overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(2, 3, 11, 0.88); }
+    .overlay[hidden] { display: none; }
+    .card { max-width: 30rem; padding: 2rem; text-align: center; border: 1px solid #303761; background: #0a1030; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+    <p id="status">Loading GeoCube 3D Remastered...</p>
+  </main>
+  <div class="overlay" id="audio-overlay">
+    <div class="card">
+      <h1>GeoCube 3D Remastered</h1>
+      <p>Click to enable browser audio, then use the game menu to start.</p>
+      <button id="audio-button" type="button">Enable Audio</button>
+    </div>
+  </div>
+  <script>
+    var Module = {
+      canvas: document.getElementById('canvas'),
+      print: function(text) { console.log(text); },
+      printErr: function(text) { console.error(text); }
+    };
+    window.geocubeUnlockAudio = function() {
+      var AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        window.geocubeAudioContext = window.geocubeAudioContext || new AudioContext();
+        window.geocubeAudioContext.resume();
+      }
+      var audio = window.geocubeMusicAudio || new Audio();
+      window.geocubeMusicAudio = audio;
+      audio.muted = true;
+      audio.src = audio.src || 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+      var unlock = audio.play();
+      if (unlock) unlock.then(function() {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+      }).catch(function(error) {
+        audio.muted = false;
+        console.warn('GeoCube audio unlock probe failed', error);
+      });
+      document.getElementById('audio-overlay').hidden = true;
+      document.getElementById('canvas').focus();
+    };
+    document.getElementById('audio-button').addEventListener('click', window.geocubeUnlockAudio);
+    document.addEventListener('pointerdown', function() {
+      if (window.geocubeMusicNeedsUnlock) window.geocubeUnlockAudio();
+    }, {passive: true});
+    document.addEventListener('keydown', function() {
+      if (window.geocubeMusicNeedsUnlock) window.geocubeUnlockAudio();
+    }, {passive: true});
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

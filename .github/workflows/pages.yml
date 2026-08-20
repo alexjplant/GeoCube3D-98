@@ -1,0 +1,70 @@
+name: Browser Build and Pages
+
+on:
+  push:
+    branches: [master, sdl-web]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install music rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git pkg-config libgl1-mesa-dev libfluidsynth-dev libsndfile1-dev
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+          actions-cache-folder: emsdk-cache
+      - name: Configure native music renderer
+        working-directory: remastered
+        run: cmake --preset release
+      - name: Build native music renderer
+        working-directory: remastered
+        run: cmake --build --preset release --target geocube3d_music_render
+      - name: Render MIDI tracks to OGG
+        working-directory: remastered
+        run: ./scripts/render-music.sh
+      - name: Configure web build
+        working-directory: remastered
+        run: emcmake cmake --preset web
+      - name: Build web bundle
+        working-directory: remastered
+        run: cmake --build --preset web
+      - name: Prepare Pages artifact
+        working-directory: remastered
+        run: |
+          mkdir -p build/pages
+          cp build/web/geocube3d.html build/pages/index.html
+          cp build/web/geocube3d.js build/pages/
+          cp build/web/geocube3d.wasm build/pages/
+          cp build/web/geocube3d.data build/pages/
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: remastered/build/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
