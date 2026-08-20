@@ -456,6 +456,10 @@ bool Renderer::initialize(GlProcAddress loader,
     return false;
   }
   createPrimitiveModels(root);
+  if (!createModel(createShieldModel(), m_shieldModel)) {
+    shutdown();
+    return false;
+  }
   if (!loadReferenceModels(root)) {
     shutdown();
     return false;
@@ -516,6 +520,40 @@ bool Renderer::initialize(GlProcAddress loader,
   return true;
 }
 
+Model Renderer::createShieldModel() const
+{
+  constexpr int bands = 8;
+  constexpr int segments = 8;
+  Model model;
+  for (int band = 0; band <= bands; ++band) {
+    const float theta = 3.14159265359f * band / bands;
+    const float y = std::cos(theta);
+    const float radius = std::sin(theta);
+    for (int segment = 0; segment < segments; ++segment) {
+      const float phi = 2.0f * 3.14159265359f * segment / segments;
+      model.vertices.push_back(
+          {radius * std::cos(phi), y, radius * std::sin(phi)});
+    }
+  }
+
+  const auto vertexIndex = [segments](int band, int segment) {
+    return static_cast<std::uint32_t>(band * segments + segment % segments);
+  };
+  for (int band = 1; band < bands; ++band) {
+    for (int segment = 0; segment < segments; ++segment) {
+      model.indices.push_back(vertexIndex(band, segment));
+      model.indices.push_back(vertexIndex(band, segment + 1));
+    }
+  }
+  for (int band = 0; band < bands; ++band) {
+    for (int segment = 0; segment < segments; ++segment) {
+      model.indices.push_back(vertexIndex(band, segment));
+      model.indices.push_back(vertexIndex(band + 1, segment));
+    }
+  }
+  return model;
+}
+
 void Renderer::resize(int width, int height)
 {
   m_width = std::max(width, 1);
@@ -525,7 +563,7 @@ void Renderer::resize(int width, int height)
 
 void Renderer::drawModel(const GpuModel& model, const Mat4& modelMatrix,
                          const Mat4& viewProjection,
-                         const core::Vec3& color)
+                         const core::Vec3& color, GLenum primitive)
 {
   const Mat4 mvp = viewProjection * modelMatrix;
   for (const GpuModel::Part& part : model.parts) {
@@ -534,8 +572,7 @@ void Renderer::drawModel(const GpuModel& model, const Mat4& modelMatrix,
     m_gl->uniform3f(m_colorLocation, color.x * part.diffuse.x,
                     color.y * part.diffuse.y, color.z * part.diffuse.z);
     m_gl->bindVertexArray(part.vertexArray);
-    m_gl->drawElements(GL_TRIANGLES, part.indexCount, GL_UNSIGNED_INT,
-                       nullptr);
+    m_gl->drawElements(primitive, part.indexCount, GL_UNSIGNED_INT, nullptr);
   }
   m_gl->bindVertexArray(0);
 }
@@ -659,8 +696,8 @@ void Renderer::drawWorld(const core::GameWorld& world)
                 rotationY(3.14159265359f) * scale(m_playerScale),
             viewProjection, {1.0f, 1.0f, 1.0f});
   if (player.shield)
-    drawModel(m_rockModels[2], translation(player.position) * scale(16.0f),
-              viewProjection, {1.0f, 0.1f, 0.1f});
+    drawModel(m_shieldModel, translation(player.position) * scale(1.0f),
+              viewProjection, {1.0f, 0.0f, 0.0f}, GL_LINES);
 
   for (const core::Rock& rock : world.rocks()) {
     const std::size_t type = static_cast<std::size_t>(rock.type);
@@ -710,6 +747,7 @@ void Renderer::shutdown()
     destroyModel(model);
   for (GpuModel& model : m_referenceModels)
     destroyModel(model);
+  destroyModel(m_shieldModel);
   destroyModel(m_playerModel);
   if (m_lineVertexBuffer)
     m_gl->deleteBuffers(1, &m_lineVertexBuffer);

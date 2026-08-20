@@ -54,13 +54,15 @@ private:
   bool loadApi(GlProcAddress loader);
   bool createProgram();
   bool createModel(const Model& model, GpuModel& gpuModel);
+  Model createShieldModel() const;
   bool loadPlayerModel(const std::filesystem::path& root);
   void createPrimitiveModels(const std::filesystem::path& root);
   bool loadReferenceModels(const std::filesystem::path& root);
   Model createPrimitive(core::RockType type) const;
   Model createShipFallback() const;
   void drawModel(const GpuModel& model, const Mat4& modelMatrix,
-                 const Mat4& viewProjection, const core::Vec3& color);
+                 const Mat4& viewProjection, const core::Vec3& color,
+                 GLenum primitive = GL_TRIANGLES);
   void drawBoundaryGrid(const Mat4& viewProjection);
   void drawWorld(const core::GameWorld& world);
   void setError(std::string message);
@@ -76,6 +78,7 @@ private:
   GLuint m_uiVertexBuffer = 0;
   GLuint m_canvasTexture = 0;
   GpuModel m_playerModel;
+  GpuModel m_shieldModel;
   std::array<GpuModel, 5> m_rockModels{};
   std::array<GpuModel, 4> m_referenceModels{};
   float m_playerScale = 20.0f;
