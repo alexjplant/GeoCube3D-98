@@ -32,6 +32,8 @@ public:
                   const core::Vec3& color, float alpha = 1.0f);
   void drawUiCircle(float centerX, float centerY, float radius,
                     const core::Vec3& color, float alpha = 1.0f);
+  void drawUiFilledCircle(float centerX, float centerY, float radius,
+                          const core::Vec3& color, float alpha = 1.0f);
   void drawUiTriangle(float tipX, float tipY, float baseLeftX, float baseLeftY,
                       float baseRightX, float baseRightY,
                       const core::Vec3& color, float alpha = 1.0f);

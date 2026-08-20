@@ -698,6 +698,26 @@ void Renderer::drawUiCircle(float centerX, float centerY, float radius,
   drawUiVertices(GL_LINE_LOOP, vertices, color, alpha);
 }
 
+void Renderer::drawUiFilledCircle(float centerX, float centerY, float radius,
+                                  const core::Vec3& color, float alpha)
+{
+  constexpr int segments = 48;
+  std::vector<core::Vec3> vertices;
+  vertices.reserve(segments * 3);
+  for (int segment = 0; segment < segments; ++segment) {
+    const float first = 2.0f * 3.14159265359f * segment / segments;
+    const float second =
+        2.0f * 3.14159265359f * (segment + 1) / segments;
+    vertices.insert(vertices.end(),
+                    {{centerX, centerY, 0.0f},
+                     {centerX + std::cos(first) * radius,
+                      centerY + std::sin(first) * radius, 0.0f},
+                     {centerX + std::cos(second) * radius,
+                      centerY + std::sin(second) * radius, 0.0f}});
+  }
+  drawUiVertices(GL_TRIANGLES, vertices, color, alpha);
+}
+
 void Renderer::drawUiTriangle(float tipX, float tipY, float baseLeftX,
                               float baseLeftY, float baseRightX,
                               float baseRightY, const core::Vec3& color,

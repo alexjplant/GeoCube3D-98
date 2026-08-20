@@ -16,6 +16,8 @@ constexpr core::Vec3 kText{0.95f, 0.90f, 0.25f};
 constexpr core::Vec3 kHighlight{1.0f, 0.25f, 0.15f};
 constexpr core::Vec3 kFire{1.0f, 0.25f, 0.15f};
 constexpr core::Vec3 kThrust{1.0f, 0.65f, 0.10f};
+constexpr core::Vec3 kVelocityIndicator{0.20f, 1.0f, 0.25f};
+constexpr core::Vec3 kThrustWarning{1.0f, 0.05f, 0.05f};
 constexpr core::Vec3 kShield{0.10f, 0.80f, 1.0f};
 constexpr core::Vec3 kShieldTrack{0.06f, 0.10f, 0.18f};
 constexpr core::Vec3 kIndicator{1.0f, 0.0f, 0.0f};
@@ -297,20 +299,39 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
   const auto drawVectorIndicator = [&](const core::Vec3& vector,
                                        float maximumMagnitude,
                                        const core::Vec3& color, float anchorX,
-                                            float rateOfChange) {
+                                       float rateOfChange) {
     const float magnitude = core::length(vector);
+    const float depth = core::dot(vector, world.player().direction);
+    const core::Vec3 lateralVector =
+        vector - world.player().direction * depth;
+    const float lateralMagnitude = core::length(lateralVector);
     float directionX = 0.0f;
     float directionY = 0.0f;
-    if (magnitude > 1.0e-5f) {
-      const core::Vec3 normalizedVector = vector / magnitude;
+    if (lateralMagnitude > 1.0e-5f) {
+      const core::Vec3 normalizedVector = lateralVector / lateralMagnitude;
       directionX = -core::dot(normalizedVector, right);
       directionY = -core::dot(normalizedVector, world.player().up);
     }
     const float lineLength = maximumMagnitude > 0.0f
                                  ? std::min(200.0f * indicatorScale,
-                                            magnitude / maximumMagnitude *
+                                            lateralMagnitude / maximumMagnitude *
                                                 200.0f * indicatorScale)
                                  : 0.0f;
+    const float circleRadius = maximumMagnitude > 0.0f
+                                   ? std::min(40.0f * indicatorScale,
+                                              std::fabs(depth) /
+                                                  maximumMagnitude *
+                                                  40.0f * indicatorScale)
+                                   : 0.0f;
+    if (circleRadius > 0.5f * indicatorScale) {
+      constexpr float kCircleAlpha = 0.5f;
+      if (depth < 0.0f)
+        renderer.drawUiFilledCircle(anchorX, centerY, circleRadius, color,
+                                    kCircleAlpha);
+      else
+        renderer.drawUiCircle(anchorX, centerY, circleRadius, color,
+                              kCircleAlpha);
+    }
     renderer.drawUiLine(anchorX, centerY, anchorX + directionX * lineLength,
                         centerY + directionY * lineLength,
                         3.0f * indicatorScale, color);
@@ -324,11 +345,31 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
                         centerY + 16.0f * sy, textScale, color);
   };
   drawVectorIndicator(m_displayVelocity, core::kMaxVelocity,
-                      {1.0f, 0.0f, 0.0f}, centerX - 32.0f * sx,
+                      kVelocityIndicator, centerX - 32.0f * sx,
                       m_displayVelocityRate);
   drawVectorIndicator(m_displayThrust, 500.0f * 1.41421356f,
                       {1.0f, 0.85f, 0.0f}, centerX + 32.0f * sx,
                       m_displayThrustRate);
+
+  if (world.thrustFuelFraction() < 0.25f) {
+    constexpr std::string_view warning = "THRUST RESERVE LOW";
+    const float warningScale = 2.5f * sy;
+    const float warningWidth =
+        static_cast<float>(warning.size()) * 6.0f * warningScale;
+    renderer.drawUiText(std::string(warning),
+                        (renderer.width() - warningWidth) * 0.5f,
+                        centerY + 72.0f * sy, warningScale, kThrustWarning);
+  }
+  if (world.fireChargeFraction() < 0.25f) {
+    constexpr std::string_view warning = "FIRE RESERVE LOW";
+    const float warningScale = 2.5f * sy;
+    const float warningWidth =
+        static_cast<float>(warning.size()) * 6.0f * warningScale;
+    renderer.drawUiText(std::string(warning),
+                        (renderer.width() - warningWidth) * 0.5f,
+                        centerY + 100.0f * sy, warningScale,
+                        {1.0f, 0.85f, 0.0f});
+  }
 
   const float borderLeft = 24.0f * sx;
   const float borderRight = renderer.width() - 24.0f * sx;
@@ -341,7 +382,7 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
   bool proximityAlert = false;
   for (const core::Rock& rock : world.rocks()) {
     const float distance = world.distanceToRockSurface(rock);
-    if (distance < 100.0f)
+    if (distance < 250.0f)
       proximityAlert = true;
 
     float rockX = 0.0f;
