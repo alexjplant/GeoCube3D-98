@@ -234,9 +234,6 @@ public:
       m_renderer.resize(windowWidth, windowHeight);
     }
 
-    if (m_ui.settings().effects &&
-        inputState.wasPressed(geocube::core::Action::Fire))
-      m_audio.playEffect(geocube::audio::Effect::Fire);
     const bool thrusting =
         inputState.isHeld(geocube::core::Action::ThrustForward) ||
         inputState.isHeld(geocube::core::Action::ThrustBackward) ||
@@ -257,6 +254,8 @@ public:
         (wasPlaying || m_ui.screen() == geocube::ui::Screen::Playing))
       m_world.advance(deltaSeconds, simulationInput);
     if (m_ui.settings().effects) {
+      if (m_world.soundEventPending(geocube::core::SoundEvent::Fire))
+        m_audio.playEffect(geocube::audio::Effect::Fire);
       if (m_world.soundEventPending(geocube::core::SoundEvent::Hit))
         m_audio.playEffect(geocube::audio::Effect::Hit);
       if (m_world.soundEventPending(geocube::core::SoundEvent::PlayerHit))

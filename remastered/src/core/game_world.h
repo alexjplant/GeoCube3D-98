@@ -24,6 +24,13 @@ inline constexpr double kShieldRechargeRate = kShieldUsageRate * 0.10;
 inline constexpr double kThrustMaximumSeconds = 5.0;
 inline constexpr double kThrustUsageRate = 1.0;
 inline constexpr double kThrustRechargeRate = kThrustUsageRate * 0.20;
+inline constexpr double kFireMaximumSeconds = 2.0;
+inline constexpr double kFireUsageRate = 1.0;
+inline constexpr double kFireRechargeRate = kFireUsageRate * 0.10;
+inline constexpr double kFireDelaySeconds = 1.0;
+inline constexpr double kFireShotsPerSecond = 8.0;
+inline constexpr double kFireShotUsageSeconds =
+    kFireUsageRate / kFireShotsPerSecond;
 
 enum class GameState {
   Loading,
@@ -57,6 +64,7 @@ enum class Action : std::uint8_t {
 };
 
 enum class SoundEvent : std::uint8_t {
+  Fire,
   Hit,
   PlayerHit,
   ShieldHit,
@@ -212,6 +220,7 @@ public:
   double levelElapsedSeconds() const { return m_levelElapsedSeconds; }
   double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
   double thrustRemainingSeconds() const { return m_thrustRemainingSeconds; }
+  double fireRemainingSeconds() const { return m_fireRemainingSeconds; }
   bool soundEventPending(SoundEvent event) const
   {
     return m_soundEvents[soundEventIndex(event)];
@@ -226,6 +235,11 @@ public:
   {
     return static_cast<float>(m_thrustRemainingSeconds /
                               kThrustMaximumSeconds);
+  }
+  float fireChargeFraction() const
+  {
+    return static_cast<float>(m_fireRemainingSeconds /
+                              kFireMaximumSeconds);
   }
   double playerHitRemainingSeconds() const
   {
@@ -250,6 +264,8 @@ private:
   void updateRunning(const InputState& input);
   void updateShield(const InputState& input, double elapsedSeconds);
   void updateThrustFuel(const InputState& input, double elapsedSeconds);
+  void updateFire(const InputState& input, double elapsedSeconds);
+  bool fireBullet();
   void emitSoundEvent(SoundEvent event)
   {
     m_soundEvents[soundEventIndex(event)] = true;
@@ -282,8 +298,12 @@ private:
   double m_levelElapsedSeconds = 0.0;
   double m_shieldRemainingSeconds = kShieldMaximumSeconds;
   double m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  double m_fireRemainingSeconds = kFireMaximumSeconds;
+  double m_fireHeldSeconds = 0.0;
+  double m_fireAutoElapsedSeconds = 0.0;
   bool m_shieldUpdatedByAdvance = false;
   bool m_thrustFuelUpdatedByAdvance = false;
+  bool m_fireUpdatedByAdvance = false;
   bool m_fullStopRequested = false;
   std::array<bool, soundEventIndex(SoundEvent::Count)> m_soundEvents{};
   bool m_quitRequested = false;

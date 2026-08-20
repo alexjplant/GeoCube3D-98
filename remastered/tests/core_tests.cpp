@@ -306,6 +306,49 @@ void testLevelTimerAndShield()
          "timer resets for the next level", test);
 }
 
+void testFireControl()
+{
+  constexpr const char* test = "fire control";
+  using namespace geocube::core;
+  GameWorld world(44);
+  world.startNewGame();
+  world.stepFixed({});
+  world.clearRocks();
+  world.spawnRock(RockSize::Small, RockType::Cube, {0.0f, 500.0f, 0.0f});
+
+  InputState fire;
+  fire.press(Action::Fire);
+  world.stepFixed(fire);
+  expect(world.bullets().size() == 1, "fire press launches one bullet", test);
+  expect(world.soundEventPending(SoundEvent::Fire),
+         "fire press sound event", test);
+  world.clearSoundEvents();
+  fire.clearPressed();
+
+  for (int step = 0; step < 58; ++step)
+    world.stepFixed(fire);
+  expect(world.bullets().size() == 1,
+         "held fire waits one second before autofire", test);
+  world.stepFixed(fire);
+  expect(world.bullets().size() == 2,
+         "held fire starts autofire after one second", test);
+  expect(std::fabs(world.fireRemainingSeconds() - 1.75) < 0.0001,
+         "fire gauge spends one eighth second per shot", test);
+
+  fire.release(Action::Fire);
+  for (int step = 0; step < 60; ++step)
+    world.stepFixed(fire);
+  expect(std::fabs(world.fireRemainingSeconds() - 1.85) < 0.0001,
+         "fire gauge recharges at ten percent", test);
+
+  world.clearBullets();
+  world.clearSoundEvents();
+  world.spawnBullet({990.0f, 0.0f, 0.0f}, {750.0f, 0.0f, 0.0f});
+  world.stepFixed({});
+  expect(!world.soundEventPending(SoundEvent::Hit),
+         "projectile world boundary has no hit sound", test);
+}
+
 void testHighScores()
 {
   constexpr const char* test = "high scores";
@@ -336,6 +379,7 @@ int main()
   testStateAndLives();
   testFixedStepAndControls();
   testLevelTimerAndShield();
+  testFireControl();
   testHighScores();
 
   if (failures != 0) {

@@ -76,6 +76,9 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_levelElapsedSeconds = 0.0;
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
   m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  m_fireRemainingSeconds = kFireMaximumSeconds;
+  m_fireHeldSeconds = 0.0;
+  m_fireAutoElapsedSeconds = 0.0;
   m_fullStopRequested = false;
   clearSoundEvents();
   m_quitRequested = false;
@@ -89,6 +92,9 @@ void GameWorld::previewLevel(int levelIndex)
   m_levelElapsedSeconds = 0.0;
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
   m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  m_fireRemainingSeconds = kFireMaximumSeconds;
+  m_fireHeldSeconds = 0.0;
+  m_fireAutoElapsedSeconds = 0.0;
   m_fullStopRequested = false;
   clearSoundEvents();
   setupLevel();
@@ -104,6 +110,7 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
   m_accumulator += frameSeconds;
   m_shieldUpdatedByAdvance = m_state == GameState::Running;
   m_thrustFuelUpdatedByAdvance = m_state == GameState::Running;
+  m_fireUpdatedByAdvance = m_state == GameState::Running;
   // Resource duration follows gameplay time even when fixed-step catch-up is capped.
   const bool canUseResources = !input.wasPressed(Action::Quit) &&
                                !input.wasPressed(Action::Pause) &&
@@ -112,6 +119,8 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
     updateShield(input, frameSeconds);
   if (m_thrustFuelUpdatedByAdvance && canUseResources)
     updateThrustFuel(input, frameSeconds);
+  if (m_fireUpdatedByAdvance && canUseResources)
+    updateFire(input, frameSeconds);
 
   int steps = 0;
   bool firstStep = true;
@@ -131,6 +140,7 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
     m_accumulator = 0.0;
   m_shieldUpdatedByAdvance = false;
   m_thrustFuelUpdatedByAdvance = false;
+  m_fireUpdatedByAdvance = false;
 }
 
 void GameWorld::stepFixed(const InputState& input)
@@ -277,15 +287,11 @@ void GameWorld::updateRunning(const InputState& input)
     updateThrustFuel(input, kFixedStepSeconds);
   updatePlayerThrust(input);
 
-  if (input.wasPressed(Action::Fire)) {
-    const Vec3 direction = normalized(m_player.direction);
-    spawnBullet(m_player.position,
-                direction * kBulletSpeed + m_player.velocity);
-  }
+  if (!m_fireUpdatedByAdvance)
+    updateFire(input, kFixedStepSeconds);
 
-  if (advanceAndReflect(m_player.position, m_player.velocity,
-                        static_cast<float>(kFixedStepSeconds)))
-    emitSoundEvent(SoundEvent::Hit);
+  advanceAndReflect(m_player.position, m_player.velocity,
+                    static_cast<float>(kFixedStepSeconds));
   for (Rock& rock : m_rocks)
     advanceAndReflect(rock.position, rock.velocity,
                       static_cast<float>(kFixedStepSeconds));
@@ -411,6 +417,57 @@ void GameWorld::updateThrustFuel(const InputState& input,
       m_thrustRemainingSeconds + kThrustRechargeRate * elapsedSeconds);
 }
 
+bool GameWorld::fireBullet()
+{
+  if (m_fireRemainingSeconds + 1.0e-9 < kFireShotUsageSeconds)
+    return false;
+
+  const Vec3 direction = normalized(m_player.direction);
+  if (spawnBullet(m_player.position,
+                  direction * kBulletSpeed + m_player.velocity) == 0)
+    return false;
+
+  m_fireRemainingSeconds = std::max(
+      0.0, m_fireRemainingSeconds - kFireShotUsageSeconds);
+  emitSoundEvent(SoundEvent::Fire);
+  return true;
+}
+
+void GameWorld::updateFire(const InputState& input, double elapsedSeconds)
+{
+  bool fired = false;
+  if (!input.isHeld(Action::Fire)) {
+    m_fireHeldSeconds = 0.0;
+    m_fireAutoElapsedSeconds = 0.0;
+  } else if (input.wasPressed(Action::Fire)) {
+    fired = fireBullet();
+    m_fireHeldSeconds = elapsedSeconds;
+    m_fireAutoElapsedSeconds = 0.0;
+  } else {
+    const double previousHeldSeconds = m_fireHeldSeconds;
+    m_fireHeldSeconds += elapsedSeconds;
+    if (previousHeldSeconds < kFireDelaySeconds &&
+        m_fireHeldSeconds >= kFireDelaySeconds) {
+      m_fireAutoElapsedSeconds +=
+          m_fireHeldSeconds - kFireDelaySeconds;
+      fired = fireBullet() || fired;
+    } else if (m_fireHeldSeconds > kFireDelaySeconds) {
+      m_fireAutoElapsedSeconds += elapsedSeconds;
+    }
+
+    constexpr double kShotInterval = 1.0 / kFireShotsPerSecond;
+    while (m_fireAutoElapsedSeconds + 1.0e-9 >= kShotInterval) {
+      m_fireAutoElapsedSeconds -= kShotInterval;
+      fired = fireBullet() || fired;
+    }
+  }
+
+  if (!fired && !input.isHeld(Action::Fire))
+    m_fireRemainingSeconds = std::min(
+        kFireMaximumSeconds,
+        m_fireRemainingSeconds + kFireRechargeRate * elapsedSeconds);
+}
+
 void GameWorld::updateBullets()
 {
   for (Bullet& bullet : m_bullets) {
@@ -429,7 +486,6 @@ void GameWorld::updateBullets()
     bullet.velocity = nextVelocity;
 
     if (hitBorder) {
-      emitSoundEvent(SoundEvent::Hit);
       bullet.state = BulletState::Exploding;
       continue;
     }
