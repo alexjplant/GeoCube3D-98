@@ -35,6 +35,7 @@ struct Renderer::GlApi {
   PFNGLGETUNIFORMLOCATIONPROC getUniformLocation = nullptr;
   PFNGLUNIFORMMATRIX4FVPROC uniformMatrix4fv = nullptr;
   PFNGLUNIFORM3FPROC uniform3f = nullptr;
+  PFNGLUNIFORM1FPROC uniform1f = nullptr;
   PFNGLGENVERTEXARRAYSPROC genVertexArrays = nullptr;
   PFNGLBINDVERTEXARRAYPROC bindVertexArray = nullptr;
   PFNGLDELETEVERTEXARRAYSPROC deleteVertexArrays = nullptr;
@@ -100,19 +101,21 @@ const char* fragmentShaderSource()
   return R"glsl(#version 300 es
 precision highp float;
 uniform vec3 uColor;
+uniform float uAlpha;
 out vec4 FragColor;
 void main()
 {
-  FragColor = vec4(uColor, 1.0);
+  FragColor = vec4(uColor, uAlpha);
 }
 )glsl";
 #else
   return R"glsl(#version 330 core
 uniform vec3 uColor;
+uniform float uAlpha;
 out vec4 FragColor;
 void main()
 {
-  FragColor = vec4(uColor, 1.0);
+  FragColor = vec4(uColor, uAlpha);
 }
 )glsl";
 #endif
@@ -271,6 +274,7 @@ bool Renderer::loadApi(GlProcAddress loader)
   LOAD_GL(getUniformLocation, "glGetUniformLocation");
   LOAD_GL(uniformMatrix4fv, "glUniformMatrix4fv");
   LOAD_GL(uniform3f, "glUniform3f");
+  LOAD_GL(uniform1f, "glUniform1f");
   LOAD_GL(genVertexArrays, "glGenVertexArrays");
   LOAD_GL(bindVertexArray, "glBindVertexArray");
   LOAD_GL(deleteVertexArrays, "glDeleteVertexArrays");
@@ -332,7 +336,8 @@ bool Renderer::createProgram()
 
   m_mvpLocation = m_gl->getUniformLocation(m_program, "uMvp");
   m_colorLocation = m_gl->getUniformLocation(m_program, "uColor");
-  return m_mvpLocation >= 0 && m_colorLocation >= 0;
+  m_alphaLocation = m_gl->getUniformLocation(m_program, "uAlpha");
+  return m_mvpLocation >= 0 && m_colorLocation >= 0 && m_alphaLocation >= 0;
 }
 
 bool Renderer::createModel(const Model& model, GpuModel& gpuModel)
@@ -561,6 +566,43 @@ void Renderer::resize(int width, int height)
   glViewport(0, 0, m_width, m_height);
 }
 
+bool Renderer::projectWorldToUi(const core::GameWorld& world,
+                                const core::Vec3& position, float& x,
+                                float& y, bool& inFront) const
+{
+  const core::PlayerState& player = world.player();
+  const core::Vec3 camera = player.position - player.direction * 6.0f +
+                            player.up * 2.0f;
+  const Mat4 view =
+      lookAt(camera, camera + player.direction * 100.0f, player.up);
+  const Mat4 projection = perspective(world.fieldOfView(),
+                                      static_cast<float>(m_width) / m_height,
+                                      1.0f, 4000.0f);
+  const Mat4 viewProjection = projection * view;
+  const float clipX = viewProjection.values[0] * position.x +
+                      viewProjection.values[4] * position.y +
+                      viewProjection.values[8] * position.z +
+                      viewProjection.values[12];
+  const float clipY = viewProjection.values[1] * position.x +
+                      viewProjection.values[5] * position.y +
+                      viewProjection.values[9] * position.z +
+                      viewProjection.values[13];
+  const float clipW = viewProjection.values[3] * position.x +
+                      viewProjection.values[7] * position.y +
+                      viewProjection.values[11] * position.z +
+                      viewProjection.values[15];
+  if (std::fabs(clipW) <= 1.0e-6f)
+    return false;
+
+  inFront = clipW > 0.0f;
+  const float divisor = std::fabs(clipW);
+  const float normalizedX = clipX / divisor;
+  const float normalizedY = clipY / divisor;
+  x = (normalizedX + 1.0f) * 0.5f * m_width;
+  y = (1.0f - normalizedY) * 0.5f * m_height;
+  return true;
+}
+
 void Renderer::drawModel(const GpuModel& model, const Mat4& modelMatrix,
                          const Mat4& viewProjection,
                          const core::Vec3& color, GLenum primitive)
@@ -571,6 +613,7 @@ void Renderer::drawModel(const GpuModel& model, const Mat4& modelMatrix,
     m_gl->uniformMatrix4fv(m_mvpLocation, 1, GL_FALSE, mvp.data());
     m_gl->uniform3f(m_colorLocation, color.x * part.diffuse.x,
                     color.y * part.diffuse.y, color.z * part.diffuse.z);
+    m_gl->uniform1f(m_alphaLocation, 1.0f);
     m_gl->bindVertexArray(part.vertexArray);
     m_gl->drawElements(primitive, part.indexCount, GL_UNSIGNED_INT, nullptr);
   }
@@ -582,46 +625,81 @@ void Renderer::drawBoundaryGrid(const Mat4& viewProjection)
   m_gl->useProgram(m_program);
   m_gl->uniformMatrix4fv(m_mvpLocation, 1, GL_FALSE, viewProjection.data());
   m_gl->uniform3f(m_colorLocation, 0.0f, 0.5f, 1.0f);
+  m_gl->uniform1f(m_alphaLocation, 1.0f);
   m_gl->bindVertexArray(m_lineVertexArray);
   m_gl->drawArrays(GL_LINES, 0, m_lineVertexCount);
   m_gl->bindVertexArray(0);
 }
 
-void Renderer::drawUiRect(float x, float y, float width, float height,
-                          const core::Vec3& color)
+void Renderer::drawUiVertices(GLenum primitive,
+                              const std::vector<core::Vec3>& vertices,
+                              const core::Vec3& color, float alpha)
 {
-  if (!m_gl || !m_uiVertexArray)
+  if (!m_gl || !m_uiVertexArray || vertices.empty())
     return;
   glDisable(GL_DEPTH_TEST);
-  const std::vector<core::Vec3> vertices{{x, y, 0.0f},
-                                         {x + width, y, 0.0f},
-                                         {x + width, y + height, 0.0f},
-                                         {x, y, 0.0f},
-                                         {x + width, y + height, 0.0f},
-                                         {x, y + height, 0.0f}};
   const Mat4 projection =
       orthographic(0.0f, static_cast<float>(m_width), 0.0f,
                    static_cast<float>(m_height), -1.0f, 1.0f);
   m_gl->useProgram(m_program);
   m_gl->uniformMatrix4fv(m_mvpLocation, 1, GL_FALSE, projection.data());
   m_gl->uniform3f(m_colorLocation, color.x, color.y, color.z);
+  m_gl->uniform1f(m_alphaLocation, alpha);
   m_gl->bindVertexArray(m_uiVertexArray);
   m_gl->bindBuffer(GL_ARRAY_BUFFER, m_uiVertexBuffer);
   m_gl->bufferData(GL_ARRAY_BUFFER,
                    static_cast<GLsizeiptr>(vertices.size() *
                                            sizeof(core::Vec3)),
                    vertices.data(), GL_STREAM_DRAW);
-  m_gl->drawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
+  m_gl->drawArrays(primitive, 0, static_cast<GLsizei>(vertices.size()));
   m_gl->bindVertexArray(0);
   glEnable(GL_DEPTH_TEST);
 }
 
-void Renderer::drawUiText(const std::string& text, float x, float y,
-                          float scaleValue, const core::Vec3& color)
+void Renderer::drawUiRect(float x, float y, float width, float height,
+                          const core::Vec3& color, float alpha)
 {
-  if (!m_gl || !m_uiVertexArray)
-    return;
-  glDisable(GL_DEPTH_TEST);
+  drawUiVertices(
+      GL_TRIANGLES,
+      {{x, y, 0.0f},
+       {x + width, y, 0.0f},
+       {x + width, y + height, 0.0f},
+       {x, y, 0.0f},
+       {x + width, y + height, 0.0f},
+       {x, y + height, 0.0f}},
+      color, alpha);
+}
+
+void Renderer::drawUiCircle(float centerX, float centerY, float radius,
+                            const core::Vec3& color, float alpha)
+{
+  constexpr int segments = 48;
+  std::vector<core::Vec3> vertices;
+  vertices.reserve(segments);
+  for (int segment = 0; segment < segments; ++segment) {
+    const float angle = 2.0f * 3.14159265359f * segment / segments;
+    vertices.push_back({centerX + std::cos(angle) * radius,
+                        centerY + std::sin(angle) * radius, 0.0f});
+  }
+  drawUiVertices(GL_LINE_LOOP, vertices, color, alpha);
+}
+
+void Renderer::drawUiTriangle(float tipX, float tipY, float baseLeftX,
+                              float baseLeftY, float baseRightX,
+                              float baseRightY, const core::Vec3& color,
+                              float alpha)
+{
+  drawUiVertices(GL_TRIANGLES,
+                 {{tipX, tipY, 0.0f},
+                  {baseLeftX, baseLeftY, 0.0f},
+                  {baseRightX, baseRightY, 0.0f}},
+                 color, alpha);
+}
+
+void Renderer::drawUiText(const std::string& text, float x, float y,
+                          float scaleValue, const core::Vec3& color,
+                          float alpha)
+{
   std::vector<core::Vec3> vertices;
   float cursorX = x;
   float cursorY = y;
@@ -650,26 +728,7 @@ void Renderer::drawUiText(const std::string& text, float x, float y,
     }
     cursorX += 6.0f * scaleValue;
   }
-  if (vertices.empty())
-  {
-    glEnable(GL_DEPTH_TEST);
-    return;
-  }
-  const Mat4 projection =
-      orthographic(0.0f, static_cast<float>(m_width), 0.0f,
-                   static_cast<float>(m_height), -1.0f, 1.0f);
-  m_gl->useProgram(m_program);
-  m_gl->uniformMatrix4fv(m_mvpLocation, 1, GL_FALSE, projection.data());
-  m_gl->uniform3f(m_colorLocation, color.x, color.y, color.z);
-  m_gl->bindVertexArray(m_uiVertexArray);
-  m_gl->bindBuffer(GL_ARRAY_BUFFER, m_uiVertexBuffer);
-  m_gl->bufferData(GL_ARRAY_BUFFER,
-                   static_cast<GLsizeiptr>(vertices.size() *
-                                           sizeof(core::Vec3)),
-                   vertices.data(), GL_STREAM_DRAW);
-  m_gl->drawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
-  m_gl->bindVertexArray(0);
-  glEnable(GL_DEPTH_TEST);
+  drawUiVertices(GL_TRIANGLES, vertices, color, alpha);
 }
 
 void Renderer::drawWorld(const core::GameWorld& world)

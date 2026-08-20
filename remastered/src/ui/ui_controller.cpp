@@ -17,6 +17,9 @@ constexpr core::Vec3 kFire{1.0f, 0.25f, 0.15f};
 constexpr core::Vec3 kThrust{1.0f, 0.65f, 0.10f};
 constexpr core::Vec3 kShield{0.10f, 0.80f, 1.0f};
 constexpr core::Vec3 kShieldTrack{0.06f, 0.10f, 0.18f};
+constexpr core::Vec3 kIndicator{1.0f, 0.0f, 0.0f};
+constexpr float kIndicatorAlpha = 0.5f;
+constexpr float kIndicatorCloseDistance = 20.0f;
 constexpr std::array<core::Action, 17> kConfigurableActions{{
     core::Action::AimUp, core::Action::AimDown, core::Action::AimLeft,
     core::Action::AimRight, core::Action::ThrustForward,
@@ -258,7 +261,108 @@ void UiController::drawMenu(render::Renderer& renderer) const
   }
   renderer.drawUiText("ENTER SELECT   UP DOWN MOVE", 250.0f * sx, 620.0f * sy,
                       2.0f * sy,
-                      kText);
+                       kText);
+}
+
+void UiController::drawGameplayIndicators(render::Renderer& renderer,
+                                           const core::GameWorld& world) const
+{
+  const float sx = renderer.width() / 960.0f;
+  const float sy = renderer.height() / 720.0f;
+  const float indicatorScale = std::min(sx, sy);
+  float shipX = renderer.width() * 0.5f;
+  float shipY = renderer.height() * 0.5f;
+  bool shipInFront = false;
+  renderer.projectWorldToUi(world, world.player().position, shipX, shipY,
+                            shipInFront);
+  (void)shipInFront;
+
+  const float borderLeft = 24.0f * sx;
+  const float borderRight = renderer.width() - 24.0f * sx;
+  const float borderTop = 120.0f * sy;
+  const float borderBottom = renderer.height() - 24.0f * sy;
+  const float originX = shipX;
+  const float originY = shipY;
+  const double elapsed = world.levelElapsedSeconds();
+
+  for (const core::Rock& rock : world.rocks()) {
+    float rockX = 0.0f;
+    float rockY = 0.0f;
+    bool rockInFront = false;
+    if (!renderer.projectWorldToUi(world, rock.position, rockX, rockY,
+                                   rockInFront))
+      continue;
+
+    const bool offscreen = !rockInFront || rockX < borderLeft ||
+                           rockX > borderRight || rockY < borderTop ||
+                           rockY > borderBottom;
+    if (!offscreen)
+      continue;
+
+    float directionX = rockX - originX;
+    float directionY = rockY - originY;
+    const float directionLength =
+        std::sqrt(directionX * directionX + directionY * directionY);
+    if (directionLength <= 1.0e-5f) {
+      directionX = 0.0f;
+      directionY = -1.0f;
+    } else {
+      directionX /= directionLength;
+      directionY /= directionLength;
+    }
+
+    float edgeDistance = 1000000.0f;
+    if (directionX > 0.0f)
+      edgeDistance = std::min(edgeDistance,
+                              (borderRight - originX) / directionX);
+    else if (directionX < 0.0f)
+      edgeDistance = std::min(edgeDistance,
+                              (borderLeft - originX) / directionX);
+    if (directionY > 0.0f)
+      edgeDistance = std::min(edgeDistance,
+                              (borderBottom - originY) / directionY);
+    else if (directionY < 0.0f)
+      edgeDistance = std::min(edgeDistance,
+                              (borderTop - originY) / directionY);
+    if (edgeDistance <= 0.0f)
+      continue;
+
+    const float arrowX = originX + directionX * edgeDistance;
+    const float arrowY = originY + directionY * edgeDistance;
+    const float phase = static_cast<float>(elapsed * 6.0 + rock.id * 0.73);
+    const float pulse = 0.5f + 0.5f * std::sin(phase);
+    const float arrowSize = (8.0f + 4.0f * pulse) * indicatorScale;
+    const float perpendicularX = -directionY;
+    const float perpendicularY = directionX;
+    const float baseX = arrowX - directionX * arrowSize * 0.8f;
+    const float baseY = arrowY - directionY * arrowSize * 0.8f;
+    const float halfBase = arrowSize * 0.7f;
+    const float distance = core::length(rock.position - world.player().position);
+    const bool close = distance <= kIndicatorCloseDistance;
+    const float flash = close
+                            ? std::max(0.0f, std::sin(static_cast<float>(
+                                                         elapsed * 12.0 +
+                                                         rock.id)))
+                            : 0.0f;
+    const float alpha = kIndicatorAlpha + (1.0f - kIndicatorAlpha) * flash;
+    renderer.drawUiTriangle(
+        arrowX + directionX * arrowSize, arrowY + directionY * arrowSize,
+        baseX + perpendicularX * halfBase, baseY + perpendicularY * halfBase,
+        baseX - perpendicularX * halfBase, baseY - perpendicularY * halfBase,
+        kIndicator, alpha);
+
+    const std::string distanceText =
+        std::to_string(static_cast<int>(std::round(distance)));
+    const float textScale = 1.4f * sy;
+    const float textWidth =
+        static_cast<float>(distanceText.size()) * 6.0f * textScale;
+    float textX = arrowX - directionX * 24.0f * indicatorScale;
+    float textY = arrowY - directionY * 24.0f * indicatorScale;
+    textX = std::clamp(textX, 4.0f, renderer.width() - textWidth - 4.0f);
+    textY = std::clamp(textY, 4.0f,
+                       renderer.height() - 8.0f * textScale - 4.0f);
+    renderer.drawUiText(distanceText, textX, textY, textScale, kIndicator, 1.0f);
+  }
 }
 
 void UiController::drawOverlay(render::Renderer& renderer,
@@ -287,6 +391,7 @@ void UiController::draw(render::Renderer& renderer,
   if (m_screen == Screen::Playing) {
     const float sx = renderer.width() / 960.0f;
     const float sy = renderer.height() / 720.0f;
+    drawGameplayIndicators(renderer, world);
     renderer.drawUiRect(0.0f, 0.0f, renderer.width(), 109.0f * sy, kPanel);
     renderer.drawUiText("LEVEL " + std::to_string(world.levelNumber()),
                         20.0f * sx, 12.0f * sy, 3.0f * sy, kText);

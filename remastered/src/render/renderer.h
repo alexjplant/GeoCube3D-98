@@ -29,9 +29,17 @@ public:
   void resize(int width, int height);
   void render(const core::GameWorld& world);
   void drawUiRect(float x, float y, float width, float height,
-                  const core::Vec3& color);
+                  const core::Vec3& color, float alpha = 1.0f);
+  void drawUiCircle(float centerX, float centerY, float radius,
+                    const core::Vec3& color, float alpha = 1.0f);
+  void drawUiTriangle(float tipX, float tipY, float baseLeftX, float baseLeftY,
+                      float baseRightX, float baseRightY,
+                      const core::Vec3& color, float alpha = 1.0f);
   void drawUiText(const std::string& text, float x, float y, float scale,
-                  const core::Vec3& color);
+                  const core::Vec3& color, float alpha = 1.0f);
+  bool projectWorldToUi(const core::GameWorld& world,
+                        const core::Vec3& position, float& x, float& y,
+                        bool& inFront) const;
   int width() const { return m_width; }
   int height() const { return m_height; }
 
@@ -65,12 +73,15 @@ private:
                  GLenum primitive = GL_TRIANGLES);
   void drawBoundaryGrid(const Mat4& viewProjection);
   void drawWorld(const core::GameWorld& world);
+  void drawUiVertices(GLenum primitive, const std::vector<core::Vec3>& vertices,
+                      const core::Vec3& color, float alpha);
   void setError(std::string message);
 
   GlApi* m_gl = nullptr;
   GLuint m_program = 0;
   GLint m_mvpLocation = -1;
   GLint m_colorLocation = -1;
+  GLint m_alphaLocation = -1;
   GLuint m_lineVertexArray = 0;
   GLuint m_lineVertexBuffer = 0;
   GLsizei m_lineVertexCount = 0;

@@ -49,6 +49,8 @@ public:
 
 private:
   void drawMenu(render::Renderer& renderer) const;
+  void drawGameplayIndicators(render::Renderer& renderer,
+                               const core::GameWorld& world) const;
   void drawOverlay(render::Renderer& renderer, const std::string& title,
                    const std::string& body) const;
   bool anyConfirm(const core::InputState& input) const;
