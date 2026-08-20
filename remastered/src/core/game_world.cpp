@@ -75,6 +75,8 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_playerHitElapsed = 0.0;
   m_levelElapsedSeconds = 0.0;
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
+  m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  m_fullStopRequested = false;
   m_quitRequested = false;
 }
 
@@ -85,6 +87,8 @@ void GameWorld::previewLevel(int levelIndex)
   m_state = GameState::Loading;
   m_levelElapsedSeconds = 0.0;
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
+  m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  m_fullStopRequested = false;
   setupLevel();
 }
 
@@ -93,7 +97,20 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
   if (m_quitRequested)
     return;
 
-  m_accumulator += std::clamp(elapsedSeconds, 0.0, kMaximumFrameSeconds);
+  const double frameSeconds =
+      std::clamp(elapsedSeconds, 0.0, kMaximumFrameSeconds);
+  m_accumulator += frameSeconds;
+  m_shieldUpdatedByAdvance = m_state == GameState::Running;
+  m_thrustFuelUpdatedByAdvance = m_state == GameState::Running;
+  // Resource duration follows gameplay time even when fixed-step catch-up is capped.
+  const bool canUseResources = !input.wasPressed(Action::Quit) &&
+                               !input.wasPressed(Action::Pause) &&
+                               !input.wasPressed(Action::HighScores);
+  if (m_shieldUpdatedByAdvance && canUseResources)
+    updateShield(input, frameSeconds);
+  if (m_thrustFuelUpdatedByAdvance && canUseResources)
+    updateThrustFuel(input, frameSeconds);
+
   int steps = 0;
   bool firstStep = true;
   while (m_accumulator >= kFixedStepSeconds &&
@@ -110,6 +127,8 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
   if (steps == kMaximumCatchUpSteps &&
       m_accumulator >= kFixedStepSeconds)
     m_accumulator = 0.0;
+  m_shieldUpdatedByAdvance = false;
+  m_thrustFuelUpdatedByAdvance = false;
 }
 
 void GameWorld::stepFixed(const InputState& input)
@@ -192,6 +211,7 @@ void GameWorld::setupLevel()
   m_player.position = {};
   m_player.velocity = {};
   m_player.shield = false;
+  m_fullStopRequested = false;
   m_player.direction = {0.0f, 0.0f, 1.0f};
   m_player.up = {0.0f, 1.0f, 0.0f};
 
@@ -245,11 +265,14 @@ void GameWorld::updateRunning(const InputState& input)
     m_fieldOfView = std::min(kMaximumFieldOfView,
                              m_fieldOfView + kFieldOfViewStep);
 
-  updateShield(input);
+  if (!m_shieldUpdatedByAdvance)
+    updateShield(input, kFixedStepSeconds);
   updatePlayerAim(input);
 
   if (input.wasPressed(Action::FullStop))
-    m_player.velocity = {};
+    m_fullStopRequested = true;
+  if (!m_thrustFuelUpdatedByAdvance)
+    updateThrustFuel(input, kFixedStepSeconds);
   updatePlayerThrust(input);
 
   if (input.wasPressed(Action::Fire)) {
@@ -299,7 +322,22 @@ void GameWorld::updatePlayerAim(const InputState& input)
 
 void GameWorld::updatePlayerThrust(const InputState& input)
 {
+  const float thrustStep =
+      kThrustAcceleration * static_cast<float>(kFixedStepSeconds);
+  if (m_fullStopRequested) {
+    const float speed = length(m_player.velocity);
+    if (speed <= thrustStep) {
+      m_player.velocity = {};
+      m_fullStopRequested = false;
+    } else {
+      m_player.velocity = normalized(m_player.velocity) * (speed - thrustStep);
+    }
+    return;
+  }
+
   if (!hasMovementInput(input))
+    return;
+  if (m_thrustRemainingSeconds <= 0.0)
     return;
 
   const Vec3 right = normalized(cross(m_player.up, m_player.direction));
@@ -317,9 +355,7 @@ void GameWorld::updatePlayerThrust(const InputState& input)
     delta -= right;
 
   // The legacy thrust model accelerates by 500 world units per second.
-  m_player.velocity += delta *
-                       (kThrustAcceleration *
-                        static_cast<float>(kFixedStepSeconds));
+  m_player.velocity += delta * thrustStep;
   const float speed = length(m_player.velocity);
   if (speed > kMaxVelocity)
     m_player.velocity = normalized(m_player.velocity) * kMaxVelocity;
@@ -327,10 +363,10 @@ void GameWorld::updatePlayerThrust(const InputState& input)
   (void)up;
 }
 
-void GameWorld::updateShield(const InputState& input)
+void GameWorld::updateShield(const InputState& input, double elapsedSeconds)
 {
   if (input.isHeld(Action::Shield) && m_shieldRemainingSeconds > 0.0) {
-    const double usage = kShieldUsageRate * kFixedStepSeconds;
+    const double usage = kShieldUsageRate * elapsedSeconds;
     if (m_shieldRemainingSeconds <= usage + 1.0e-9)
       m_shieldRemainingSeconds = 0.0;
     else
@@ -343,7 +379,27 @@ void GameWorld::updateShield(const InputState& input)
   if (!input.isHeld(Action::Shield))
     m_shieldRemainingSeconds = std::min(
         kShieldMaximumSeconds, m_shieldRemainingSeconds +
-                                   kShieldRechargeRate * kFixedStepSeconds);
+                                   kShieldRechargeRate * elapsedSeconds);
+}
+
+void GameWorld::updateThrustFuel(const InputState& input,
+                                 double elapsedSeconds)
+{
+  if (hasMovementInput(input)) {
+    if (m_thrustRemainingSeconds <= 0.0)
+      return;
+
+    const double usage = kThrustUsageRate * elapsedSeconds;
+    if (m_thrustRemainingSeconds <= usage + 1.0e-9)
+      m_thrustRemainingSeconds = 0.0;
+    else
+      m_thrustRemainingSeconds -= usage;
+    return;
+  }
+
+  m_thrustRemainingSeconds = std::min(
+      kThrustMaximumSeconds,
+      m_thrustRemainingSeconds + kThrustRechargeRate * elapsedSeconds);
 }
 
 void GameWorld::updateBullets()

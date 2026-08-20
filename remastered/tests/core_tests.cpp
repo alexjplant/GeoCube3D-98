@@ -195,13 +195,20 @@ void testFixedStepAndControls()
   const float speedAfterTwoSteps = length(world.player().velocity);
   expect(speedAfterTwoSteps > 0.0f, "fixed step thrust", test);
   expect(speedAfterTwoSteps < kMaxVelocity, "velocity cap", test);
-  const Vec3 positionBeforeStop = world.player().position;
+  world.stepFixed(thrust);
+  const float speedBeforeStop = length(world.player().velocity);
   InputState stop;
   stop.press(Action::FullStop);
   world.advance(kFixedStepSeconds, stop);
-  expect(lengthSquared(world.player().velocity) == 0.0f, "full stop", test);
-  expect(nearlyEqual(positionBeforeStop, world.player().position),
-         "full stop preserves position", test);
+  const float speedAfterStop = length(world.player().velocity);
+  expectNear(speedAfterStop,
+             speedBeforeStop - 500.0f * static_cast<float>(kFixedStepSeconds),
+             "full stop braking rate", test);
+  expect(speedAfterStop > 0.0f, "full stop brakes instead of teleporting",
+         test);
+  world.stepFixed({});
+  expect(lengthSquared(world.player().velocity) == 0.0f,
+         "full stop reaches zero", test);
 
   InputState zoom;
   zoom.setHeld(Action::ZoomIn, true);
@@ -247,6 +254,29 @@ void testLevelTimerAndShield()
     world.stepFixed({});
   expect(std::fabs(world.shieldRemainingSeconds() - 0.1) < 0.0001,
          "shield recharges at ten percent", test);
+
+  GameWorld frameWorld(16);
+  frameWorld.startNewGame();
+  frameWorld.stepFixed({});
+  for (int frame = 0; frame < 30; ++frame)
+    frameWorld.advance(0.1, shield);
+  expect(!frameWorld.player().shield &&
+             frameWorld.shieldRemainingSeconds() <= 0.0001,
+         "shield uses wall-clock gameplay time", test);
+
+  GameWorld thrustWorld(17);
+  thrustWorld.startNewGame();
+  thrustWorld.stepFixed({});
+  InputState thrust;
+  thrust.setHeld(Action::ThrustForward, true);
+  for (int step = 0; step < 300; ++step)
+    thrustWorld.stepFixed(thrust);
+  expect(thrustWorld.thrustRemainingSeconds() <= 0.0001,
+         "thrust fuel depletes after five seconds", test);
+  for (int step = 0; step < 60; ++step)
+    thrustWorld.stepFixed({});
+  expect(std::fabs(thrustWorld.thrustRemainingSeconds() - 0.2) < 0.0001,
+         "thrust fuel recharges at twenty percent", test);
 
   world.clearRocks();
   world.stepFixed({});

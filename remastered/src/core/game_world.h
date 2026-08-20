@@ -21,6 +21,9 @@ inline constexpr double kPlayerHitDelaySeconds = 8.0;
 inline constexpr double kShieldMaximumSeconds = 3.0;
 inline constexpr double kShieldUsageRate = 1.0;
 inline constexpr double kShieldRechargeRate = kShieldUsageRate * 0.10;
+inline constexpr double kThrustMaximumSeconds = 5.0;
+inline constexpr double kThrustUsageRate = 1.0;
+inline constexpr double kThrustRechargeRate = kThrustUsageRate * 0.20;
 
 enum class GameState {
   Loading,
@@ -196,10 +199,16 @@ public:
   bool quitRequested() const { return m_quitRequested; }
   double levelElapsedSeconds() const { return m_levelElapsedSeconds; }
   double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
+  double thrustRemainingSeconds() const { return m_thrustRemainingSeconds; }
   float shieldChargeFraction() const
   {
     return static_cast<float>(m_shieldRemainingSeconds /
                               kShieldMaximumSeconds);
+  }
+  float thrustFuelFraction() const
+  {
+    return static_cast<float>(m_thrustRemainingSeconds /
+                              kThrustMaximumSeconds);
   }
   double playerHitRemainingSeconds() const
   {
@@ -222,7 +231,8 @@ private:
   void setupLevel();
   void advanceToNextLevel();
   void updateRunning(const InputState& input);
-  void updateShield(const InputState& input);
+  void updateShield(const InputState& input, double elapsedSeconds);
+  void updateThrustFuel(const InputState& input, double elapsedSeconds);
   void updatePlayerAim(const InputState& input);
   void updatePlayerThrust(const InputState& input);
   void updateBullets();
@@ -250,6 +260,10 @@ private:
   double m_playerHitElapsed = 0.0;
   double m_levelElapsedSeconds = 0.0;
   double m_shieldRemainingSeconds = kShieldMaximumSeconds;
+  double m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  bool m_shieldUpdatedByAdvance = false;
+  bool m_thrustFuelUpdatedByAdvance = false;
+  bool m_fullStopRequested = false;
   bool m_quitRequested = false;
 };
 

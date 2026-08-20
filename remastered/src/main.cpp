@@ -246,12 +246,6 @@ public:
       m_audio.playEffect(geocube::audio::Effect::Thrust, true);
     else
       m_audio.stopEffect(geocube::audio::Effect::Thrust);
-    if (m_ui.settings().effects &&
-        inputState.isHeld(geocube::core::Action::Shield) &&
-        m_world.shieldRemainingSeconds() > 0.0)
-      m_audio.playEffect(geocube::audio::Effect::Shield, true);
-    else
-      m_audio.stopEffect(geocube::audio::Effect::Shield);
     geocube::core::InputState simulationInput = inputState;
     if (command.pauseMenuOpened)
       simulationInput.clear(geocube::core::Action::Quit);
@@ -262,6 +256,13 @@ public:
     if (!command.pauseMenuOpened && !command.endGame &&
         (wasPlaying || m_ui.screen() == geocube::ui::Screen::Playing))
       m_world.advance(deltaSeconds, simulationInput);
+    if (m_ui.settings().effects &&
+        m_ui.screen() == geocube::ui::Screen::Playing &&
+        inputState.isHeld(geocube::core::Action::Shield) &&
+        m_world.player().shield)
+      m_audio.playEffect(geocube::audio::Effect::Shield, true);
+    else
+      m_audio.stopEffect(geocube::audio::Effect::Shield);
     if (!m_ui.settings().music) {
       m_audio.stopMusic();
       m_activeMusic.clear();

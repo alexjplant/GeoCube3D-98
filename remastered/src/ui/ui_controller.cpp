@@ -13,6 +13,7 @@ namespace {
 constexpr core::Vec3 kPanel{0.02f, 0.03f, 0.10f};
 constexpr core::Vec3 kText{0.95f, 0.90f, 0.25f};
 constexpr core::Vec3 kHighlight{1.0f, 0.25f, 0.15f};
+constexpr core::Vec3 kThrust{1.0f, 0.65f, 0.10f};
 constexpr core::Vec3 kShield{0.10f, 0.80f, 1.0f};
 constexpr core::Vec3 kShieldTrack{0.06f, 0.10f, 0.18f};
 constexpr std::array<core::Action, 17> kConfigurableActions{{
@@ -285,22 +286,27 @@ void UiController::draw(render::Renderer& renderer,
   if (m_screen == Screen::Playing) {
     const float sx = renderer.width() / 960.0f;
     const float sy = renderer.height() / 720.0f;
-    renderer.drawUiRect(0.0f, 0.0f, renderer.width(), 55.0f * sy, kPanel);
+    renderer.drawUiRect(0.0f, 0.0f, renderer.width(), 78.0f * sy, kPanel);
     renderer.drawUiText("LEVEL " + std::to_string(world.levelNumber()),
-                        20.0f * sx, 18.0f * sy, 3.0f * sy, kText);
+                        20.0f * sx, 12.0f * sy, 3.0f * sy, kText);
     renderer.drawUiText(formatLevelTime(world.levelElapsedSeconds()),
-                        160.0f * sx, 18.0f * sy, 3.0f * sy, kText);
-    renderer.drawUiText("SCORE " + std::to_string(world.score()), 380.0f * sx,
-                        18.0f * sy, 3.0f * sy, kText);
-    renderer.drawUiText("SHIELD", 535.0f * sx, 20.0f * sy, 2.0f * sy, kText);
+                        160.0f * sx, 12.0f * sy, 3.0f * sy, kText);
+    renderer.drawUiText("LIVES " + std::to_string(world.lives()), 760.0f * sx,
+                        12.0f * sy, 3.0f * sy, kText);
+    renderer.drawUiText("THRUST", 535.0f * sx, 13.0f * sy, 2.0f * sy, kText);
+    const float thrustFuel =
+        std::clamp(world.thrustFuelFraction(), 0.0f, 1.0f);
+    renderer.drawUiRect(635.0f * sx, 10.0f * sy, 100.0f * sx, 16.0f * sy,
+                        kShieldTrack);
+    renderer.drawUiRect(637.0f * sx, 12.0f * sy,
+                        96.0f * sx * thrustFuel, 12.0f * sy, kThrust);
+    renderer.drawUiText("SHIELD", 535.0f * sx, 44.0f * sy, 2.0f * sy, kText);
     const float shieldCharge =
         std::clamp(world.shieldChargeFraction(), 0.0f, 1.0f);
-    renderer.drawUiRect(635.0f * sx, 18.0f * sy, 100.0f * sx, 16.0f * sy,
+    renderer.drawUiRect(635.0f * sx, 41.0f * sy, 100.0f * sx, 16.0f * sy,
                         kShieldTrack);
-    renderer.drawUiRect(637.0f * sx, 20.0f * sy,
+    renderer.drawUiRect(637.0f * sx, 43.0f * sy,
                         96.0f * sx * shieldCharge, 12.0f * sy, kShield);
-    renderer.drawUiText("LIVES " + std::to_string(world.lives()), 760.0f * sx,
-                        18.0f * sy, 3.0f * sy, kText);
     if (world.state() == core::GameState::PlayerHit) {
       const int seconds = static_cast<int>(std::ceil(
           world.playerHitRemainingSeconds()));
