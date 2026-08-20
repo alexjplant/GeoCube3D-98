@@ -220,6 +220,40 @@ void testFixedStepAndControls()
              "legacy maximum velocity", test);
 }
 
+void testLevelTimerAndShield()
+{
+  constexpr const char* test = "level timer and shield";
+  using namespace geocube::core;
+  GameWorld world(15);
+  world.startNewGame();
+  expect(world.levelElapsedSeconds() == 0.0, "timer starts at zero", test);
+  expect(world.shieldRemainingSeconds() == kShieldMaximumSeconds,
+         "shield starts full", test);
+  world.stepFixed({});
+  expect(world.levelElapsedSeconds() == 0.0,
+         "loading does not advance timer", test);
+
+  InputState shield;
+  shield.setHeld(Action::Shield, true);
+  for (int step = 0; step < 180; ++step)
+    world.stepFixed(shield);
+  expect(world.levelElapsedSeconds() >= 2.99,
+         "timer counts during running gameplay", test);
+  expect(!world.player().shield, "shield turns off when depleted", test);
+  expect(world.shieldRemainingSeconds() <= 0.0001,
+         "shield depletes after three seconds", test);
+
+  for (int step = 0; step < 60; ++step)
+    world.stepFixed({});
+  expect(std::fabs(world.shieldRemainingSeconds() - 0.1) < 0.0001,
+         "shield recharges at ten percent", test);
+
+  world.clearRocks();
+  world.stepFixed({});
+  expect(world.levelIndex() == 1 && world.levelElapsedSeconds() == 0.0,
+         "timer resets for the next level", test);
+}
+
 void testHighScores()
 {
   constexpr const char* test = "high scores";
@@ -249,6 +283,7 @@ int main()
   testLevelWrapping();
   testStateAndLives();
   testFixedStepAndControls();
+  testLevelTimerAndShield();
   testHighScores();
 
   if (failures != 0) {

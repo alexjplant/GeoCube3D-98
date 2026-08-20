@@ -73,6 +73,8 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_fieldOfView = 0.9f;
   m_accumulator = 0.0;
   m_playerHitElapsed = 0.0;
+  m_levelElapsedSeconds = 0.0;
+  m_shieldRemainingSeconds = kShieldMaximumSeconds;
   m_quitRequested = false;
 }
 
@@ -81,6 +83,8 @@ void GameWorld::previewLevel(int levelIndex)
   m_levelIndex = std::clamp(levelIndex, 0, 4);
   m_levelWrap = 0;
   m_state = GameState::Loading;
+  m_levelElapsedSeconds = 0.0;
+  m_shieldRemainingSeconds = kShieldMaximumSeconds;
   setupLevel();
 }
 
@@ -211,6 +215,7 @@ void GameWorld::advanceToNextLevel()
     m_levelIndex = 0;
     ++m_levelWrap;
   }
+  m_levelElapsedSeconds = 0.0;
   setupLevel();
 }
 
@@ -231,6 +236,8 @@ void GameWorld::updateRunning(const InputState& input)
     return;
   }
 
+  m_levelElapsedSeconds += kFixedStepSeconds;
+
   if (input.isHeld(Action::ZoomIn))
     m_fieldOfView = std::max(kMinimumFieldOfView,
                              m_fieldOfView - kFieldOfViewStep);
@@ -238,7 +245,7 @@ void GameWorld::updateRunning(const InputState& input)
     m_fieldOfView = std::min(kMaximumFieldOfView,
                              m_fieldOfView + kFieldOfViewStep);
 
-  m_player.shield = input.isHeld(Action::Shield);
+  updateShield(input);
   updatePlayerAim(input);
 
   if (input.wasPressed(Action::FullStop))
@@ -318,6 +325,25 @@ void GameWorld::updatePlayerThrust(const InputState& input)
     m_player.velocity = normalized(m_player.velocity) * kMaxVelocity;
 
   (void)up;
+}
+
+void GameWorld::updateShield(const InputState& input)
+{
+  if (input.isHeld(Action::Shield) && m_shieldRemainingSeconds > 0.0) {
+    const double usage = kShieldUsageRate * kFixedStepSeconds;
+    if (m_shieldRemainingSeconds <= usage + 1.0e-9)
+      m_shieldRemainingSeconds = 0.0;
+    else
+      m_shieldRemainingSeconds -= usage;
+    m_player.shield = m_shieldRemainingSeconds > 0.0;
+    return;
+  }
+
+  m_player.shield = false;
+  if (!input.isHeld(Action::Shield))
+    m_shieldRemainingSeconds = std::min(
+        kShieldMaximumSeconds, m_shieldRemainingSeconds +
+                                   kShieldRechargeRate * kFixedStepSeconds);
 }
 
 void GameWorld::updateBullets()

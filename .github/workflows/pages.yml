@@ -2,8 +2,8 @@ name: Browser Build and Pages
 
 on:
   push:
-    branches: [master, sdl-web]
-  workflow_dispatch:
+    branches: [master]
+  pull_request:
 
 permissions:
   contents: read
@@ -53,12 +53,14 @@ jobs:
           cp build/web/geocube3d.wasm build/pages/
           cp build/web/geocube3d.data build/pages/
       - name: Configure Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: remastered/build/pages
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     environment:

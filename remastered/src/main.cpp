@@ -247,7 +247,8 @@ public:
     else
       m_audio.stopEffect(geocube::audio::Effect::Thrust);
     if (m_ui.settings().effects &&
-        inputState.isHeld(geocube::core::Action::Shield))
+        inputState.isHeld(geocube::core::Action::Shield) &&
+        m_world.shieldRemainingSeconds() > 0.0)
       m_audio.playEffect(geocube::audio::Effect::Shield, true);
     else
       m_audio.stopEffect(geocube::audio::Effect::Shield);

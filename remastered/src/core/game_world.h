@@ -18,6 +18,9 @@ inline constexpr int kMaximumCatchUpSteps = 8;
 inline constexpr int kStartingLives = 3;
 inline constexpr std::size_t kMaximumBullets = 16;
 inline constexpr double kPlayerHitDelaySeconds = 8.0;
+inline constexpr double kShieldMaximumSeconds = 3.0;
+inline constexpr double kShieldUsageRate = 1.0;
+inline constexpr double kShieldRechargeRate = kShieldUsageRate * 0.10;
 
 enum class GameState {
   Loading,
@@ -191,6 +194,13 @@ public:
   int levelNumber() const { return m_levelIndex + 1 + m_levelWrap * 5; }
   float fieldOfView() const { return m_fieldOfView; }
   bool quitRequested() const { return m_quitRequested; }
+  double levelElapsedSeconds() const { return m_levelElapsedSeconds; }
+  double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
+  float shieldChargeFraction() const
+  {
+    return static_cast<float>(m_shieldRemainingSeconds /
+                              kShieldMaximumSeconds);
+  }
   double playerHitRemainingSeconds() const
   {
     return m_playerHitElapsed < kPlayerHitDelaySeconds
@@ -212,6 +222,7 @@ private:
   void setupLevel();
   void advanceToNextLevel();
   void updateRunning(const InputState& input);
+  void updateShield(const InputState& input);
   void updatePlayerAim(const InputState& input);
   void updatePlayerThrust(const InputState& input);
   void updateBullets();
@@ -237,6 +248,8 @@ private:
   float m_fieldOfView = 0.9f;
   double m_accumulator = 0.0;
   double m_playerHitElapsed = 0.0;
+  double m_levelElapsedSeconds = 0.0;
+  double m_shieldRemainingSeconds = kShieldMaximumSeconds;
   bool m_quitRequested = false;
 };
 

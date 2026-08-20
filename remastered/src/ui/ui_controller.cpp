@@ -13,6 +13,8 @@ namespace {
 constexpr core::Vec3 kPanel{0.02f, 0.03f, 0.10f};
 constexpr core::Vec3 kText{0.95f, 0.90f, 0.25f};
 constexpr core::Vec3 kHighlight{1.0f, 0.25f, 0.15f};
+constexpr core::Vec3 kShield{0.10f, 0.80f, 1.0f};
+constexpr core::Vec3 kShieldTrack{0.06f, 0.10f, 0.18f};
 constexpr std::array<core::Action, 17> kConfigurableActions{{
     core::Action::AimUp, core::Action::AimDown, core::Action::AimLeft,
     core::Action::AimRight, core::Action::ThrustForward,
@@ -21,6 +23,16 @@ constexpr std::array<core::Action, 17> kConfigurableActions{{
     core::Action::Pause, core::Action::FullStop, core::Action::HighScores,
     core::Action::Quit, core::Action::ZoomIn,
     core::Action::ZoomOut, core::Action::Confirm}};
+
+std::string formatLevelTime(double seconds)
+{
+  const int totalSeconds = std::max(0, static_cast<int>(seconds));
+  const int minutes = totalSeconds / 60;
+  const int remainingSeconds = totalSeconds % 60;
+  return "TIME " + std::to_string(minutes) + ":" +
+         (remainingSeconds < 10 ? "0" : "") +
+         std::to_string(remainingSeconds);
+}
 
 } // namespace
 
@@ -276,8 +288,17 @@ void UiController::draw(render::Renderer& renderer,
     renderer.drawUiRect(0.0f, 0.0f, renderer.width(), 55.0f * sy, kPanel);
     renderer.drawUiText("LEVEL " + std::to_string(world.levelNumber()),
                         20.0f * sx, 18.0f * sy, 3.0f * sy, kText);
+    renderer.drawUiText(formatLevelTime(world.levelElapsedSeconds()),
+                        160.0f * sx, 18.0f * sy, 3.0f * sy, kText);
     renderer.drawUiText("SCORE " + std::to_string(world.score()), 380.0f * sx,
                         18.0f * sy, 3.0f * sy, kText);
+    renderer.drawUiText("SHIELD", 535.0f * sx, 20.0f * sy, 2.0f * sy, kText);
+    const float shieldCharge =
+        std::clamp(world.shieldChargeFraction(), 0.0f, 1.0f);
+    renderer.drawUiRect(635.0f * sx, 18.0f * sy, 100.0f * sx, 16.0f * sy,
+                        kShieldTrack);
+    renderer.drawUiRect(637.0f * sx, 20.0f * sy,
+                        96.0f * sx * shieldCharge, 12.0f * sy, kShield);
     renderer.drawUiText("LIVES " + std::to_string(world.lives()), 760.0f * sx,
                         18.0f * sy, 3.0f * sy, kText);
     if (world.state() == core::GameState::PlayerHit) {
