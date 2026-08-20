@@ -77,6 +77,7 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
   m_thrustRemainingSeconds = kThrustMaximumSeconds;
   m_fullStopRequested = false;
+  clearSoundEvents();
   m_quitRequested = false;
 }
 
@@ -89,6 +90,7 @@ void GameWorld::previewLevel(int levelIndex)
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
   m_thrustRemainingSeconds = kThrustMaximumSeconds;
   m_fullStopRequested = false;
+  clearSoundEvents();
   setupLevel();
 }
 
@@ -281,8 +283,9 @@ void GameWorld::updateRunning(const InputState& input)
                 direction * kBulletSpeed + m_player.velocity);
   }
 
-  advanceAndReflect(m_player.position, m_player.velocity,
-                    static_cast<float>(kFixedStepSeconds));
+  if (advanceAndReflect(m_player.position, m_player.velocity,
+                        static_cast<float>(kFixedStepSeconds)))
+    emitSoundEvent(SoundEvent::Hit);
   for (Rock& rock : m_rocks)
     advanceAndReflect(rock.position, rock.velocity,
                       static_cast<float>(kFixedStepSeconds));
@@ -328,6 +331,8 @@ void GameWorld::updatePlayerThrust(const InputState& input)
     const float speed = length(m_player.velocity);
     if (speed <= thrustStep) {
       m_player.velocity = {};
+      m_fullStopRequested = false;
+    } else if (m_thrustRemainingSeconds <= 0.0) {
       m_fullStopRequested = false;
     } else {
       m_player.velocity = normalized(m_player.velocity) * (speed - thrustStep);
@@ -385,7 +390,11 @@ void GameWorld::updateShield(const InputState& input, double elapsedSeconds)
 void GameWorld::updateThrustFuel(const InputState& input,
                                  double elapsedSeconds)
 {
-  if (hasMovementInput(input)) {
+  const bool stopping =
+      m_fullStopRequested ||
+      (input.wasPressed(Action::FullStop) &&
+       lengthSquared(m_player.velocity) > 0.0f);
+  if (hasMovementInput(input) || stopping) {
     if (m_thrustRemainingSeconds <= 0.0)
       return;
 
@@ -419,7 +428,12 @@ void GameWorld::updateBullets()
     bullet.position = nextPosition;
     bullet.velocity = nextVelocity;
 
-    if (hitBorder || bullet.age > kBulletLifetime) {
+    if (hitBorder) {
+      emitSoundEvent(SoundEvent::Hit);
+      bullet.state = BulletState::Exploding;
+      continue;
+    }
+    if (bullet.age > kBulletLifetime) {
       bullet.state = BulletState::Exploding;
       continue;
     }
@@ -428,8 +442,9 @@ void GameWorld::updateBullets()
          ++rockIndex) {
       const Rock& rock = m_rocks[rockIndex];
       if (segmentIntersectsSphere(oldPosition, bullet.position,
-                                  rock.position,
-                                  rock.radius + kBulletRadius)) {
+                                   rock.position,
+                                   rock.radius + kBulletRadius)) {
+        emitSoundEvent(SoundEvent::Hit);
         bullet.state = BulletState::Exploding;
         splitRock(rockIndex);
         break;
@@ -479,9 +494,12 @@ void GameWorld::handlePlayerCollision()
                           rock.radius))
       continue;
 
-    if (m_player.shield)
+    if (m_player.shield) {
+      emitSoundEvent(SoundEvent::ShieldHit);
       return;
+    }
 
+    emitSoundEvent(SoundEvent::PlayerHit);
     m_state = GameState::PlayerHit;
     m_playerHitElapsed = 0.0;
     m_player.velocity = {};

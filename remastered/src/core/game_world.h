@@ -56,6 +56,18 @@ enum class Action : std::uint8_t {
   Count,
 };
 
+enum class SoundEvent : std::uint8_t {
+  Hit,
+  PlayerHit,
+  ShieldHit,
+  Count,
+};
+
+constexpr std::size_t soundEventIndex(SoundEvent event)
+{
+  return static_cast<std::size_t>(event);
+}
+
 constexpr std::size_t actionIndex(Action action)
 {
   return static_cast<std::size_t>(action);
@@ -200,6 +212,11 @@ public:
   double levelElapsedSeconds() const { return m_levelElapsedSeconds; }
   double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
   double thrustRemainingSeconds() const { return m_thrustRemainingSeconds; }
+  bool soundEventPending(SoundEvent event) const
+  {
+    return m_soundEvents[soundEventIndex(event)];
+  }
+  void clearSoundEvents() { m_soundEvents.fill(false); }
   float shieldChargeFraction() const
   {
     return static_cast<float>(m_shieldRemainingSeconds /
@@ -233,6 +250,10 @@ private:
   void updateRunning(const InputState& input);
   void updateShield(const InputState& input, double elapsedSeconds);
   void updateThrustFuel(const InputState& input, double elapsedSeconds);
+  void emitSoundEvent(SoundEvent event)
+  {
+    m_soundEvents[soundEventIndex(event)] = true;
+  }
   void updatePlayerAim(const InputState& input);
   void updatePlayerThrust(const InputState& input);
   void updateBullets();
@@ -264,6 +285,7 @@ private:
   bool m_shieldUpdatedByAdvance = false;
   bool m_thrustFuelUpdatedByAdvance = false;
   bool m_fullStopRequested = false;
+  std::array<bool, soundEventIndex(SoundEvent::Count)> m_soundEvents{};
   bool m_quitRequested = false;
 };
 

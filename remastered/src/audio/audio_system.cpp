@@ -279,7 +279,7 @@ void AudioSystem::playMusic(std::string_view legacyName)
       fluid_player_add(m_player,
                        (m_musicDirectory / std::string(legacyName)).string()
                            .c_str()) == FLUID_FAILED ||
-      fluid_player_set_loop(m_player, 1) == FLUID_FAILED ||
+      fluid_player_set_loop(m_player, -1) == FLUID_FAILED ||
       fluid_player_play(m_player) == FLUID_FAILED) {
     setError(std::string("FluidSynth MIDI playback failed: ") +
              std::string(legacyName));

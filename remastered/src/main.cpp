@@ -256,6 +256,15 @@ public:
     if (!command.pauseMenuOpened && !command.endGame &&
         (wasPlaying || m_ui.screen() == geocube::ui::Screen::Playing))
       m_world.advance(deltaSeconds, simulationInput);
+    if (m_ui.settings().effects) {
+      if (m_world.soundEventPending(geocube::core::SoundEvent::Hit))
+        m_audio.playEffect(geocube::audio::Effect::Hit);
+      if (m_world.soundEventPending(geocube::core::SoundEvent::PlayerHit))
+        m_audio.playEffect(geocube::audio::Effect::PlayerHit);
+      if (m_world.soundEventPending(geocube::core::SoundEvent::ShieldHit))
+        m_audio.playEffect(geocube::audio::Effect::ShieldHit);
+    }
+    m_world.clearSoundEvents();
     if (m_ui.settings().effects &&
         m_ui.screen() == geocube::ui::Screen::Playing &&
         inputState.isHeld(geocube::core::Action::Shield) &&

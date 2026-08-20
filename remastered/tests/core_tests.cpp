@@ -106,6 +106,9 @@ void testLevelsAndSplitting()
   world.spawnBullet({}, {0.0f, 0.0f, 600.0f});
   world.stepFixed({});
   expect(world.score() == 50, "large rock score", test);
+  expect(world.soundEventPending(SoundEvent::Hit),
+         "rock hit sound event", test);
+  world.clearSoundEvents();
   expect(world.rocks().size() == 4, "large rock splits into four", test);
   expect(world.rocks()[0].size == RockSize::Medium,
          "large rock child size", test);
@@ -155,6 +158,9 @@ void testStateAndLives()
                   {-900.0f, -900.0f, -900.0f});
   world.stepFixed({});
   expect(world.state() == GameState::PlayerHit, "player hit state", test);
+  expect(world.soundEventPending(SoundEvent::PlayerHit),
+         "player hit sound event", test);
+  world.clearSoundEvents();
   for (int step = 0; step < 480; ++step)
     world.stepFixed({});
   expect(world.lives() == 2, "life decrement", test);
@@ -171,6 +177,17 @@ void testStateAndLives()
   }
   expect(world.lives() == 0, "game over life count", test);
   expect(world.state() == GameState::GameOver, "game over state", test);
+
+  GameWorld shielded(10);
+  prepareWorld(shielded);
+  InputState shield;
+  shield.setHeld(Action::Shield, true);
+  shielded.spawnRock(RockSize::Small, RockType::Cube,
+                     {-900.0f, -900.0f, -900.0f});
+  shielded.stepFixed(shield);
+  expect(shielded.state() == GameState::Running &&
+             shielded.soundEventPending(SoundEvent::ShieldHit),
+         "shield hit sound event", test);
 
   GameWorld overlays;
   overlays.startNewGame();
@@ -197,10 +214,15 @@ void testFixedStepAndControls()
   expect(speedAfterTwoSteps < kMaxVelocity, "velocity cap", test);
   world.stepFixed(thrust);
   const float speedBeforeStop = length(world.player().velocity);
+  const double fuelBeforeStop = world.thrustRemainingSeconds();
   InputState stop;
   stop.press(Action::FullStop);
   world.advance(kFixedStepSeconds, stop);
   const float speedAfterStop = length(world.player().velocity);
+  expect(std::fabs(world.thrustRemainingSeconds() -
+                   (fuelBeforeStop - kThrustUsageRate * kFixedStepSeconds)) <
+             0.0001,
+         "full stop uses thrust fuel", test);
   expectNear(speedAfterStop,
              speedBeforeStop - 500.0f * static_cast<float>(kFixedStepSeconds),
              "full stop braking rate", test);
