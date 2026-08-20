@@ -3,6 +3,7 @@
 
 #include "core/math.h"
 #include "core/convex_hull.h"
+#include "core/collision.h"
 
 #include <array>
 #include <cstddef>
@@ -226,6 +227,8 @@ public:
   float fieldOfView() const { return m_fieldOfView; }
   bool quitRequested() const { return m_quitRequested; }
   double levelElapsedSeconds() const { return m_levelElapsedSeconds; }
+  float cubeBoundary() const { return currentCubeBoundary(); }
+  double cubeShrinkWarningRemainingSeconds() const;
   double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
   double thrustRemainingSeconds() const { return m_thrustRemainingSeconds; }
   double fireRemainingSeconds() const { return m_fireRemainingSeconds; }
@@ -272,6 +275,7 @@ private:
   void setupLevel();
   void advanceToNextLevel();
   void updateRunning(const InputState& input);
+  void updateCubeShrink();
   void updateShield(const InputState& input, double elapsedSeconds);
   void updateThrustFuel(const InputState& input, double elapsedSeconds);
   void updateFire(const InputState& input, double elapsedSeconds);
@@ -295,6 +299,7 @@ private:
   const ConvexHull& hullForRock(RockType type) const;
   float rockScale(RockType type, float radius) const;
   void playerHullBasis(Vec3& x, Vec3& y, Vec3& z) const;
+  float currentCubeBoundary() const;
 
   std::mt19937 m_random;
   std::string m_playerName;
@@ -322,6 +327,9 @@ private:
   bool m_thrustFuelUpdatedByAdvance = false;
   bool m_fireUpdatedByAdvance = false;
   bool m_fullStopRequested = false;
+  double m_cubeShrinkElapsedSeconds = 0.0;
+  double m_cubeShrinkStartBoundary = kWorldBoundary;
+  double m_cubeShrinkTargetBoundary = kWorldBoundary;
   std::array<bool, soundEventIndex(SoundEvent::Count)> m_soundEvents{};
   bool m_quitRequested = false;
   CollisionGeometry m_collisionGeometry = defaultCollisionGeometry();

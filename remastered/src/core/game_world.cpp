@@ -81,6 +81,9 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_velocityMagnitudeRate = 0.0f;
   m_thrustMagnitudeRate = 0.0f;
   m_fullStopRequested = false;
+  m_cubeShrinkElapsedSeconds = 0.0;
+  m_cubeShrinkStartBoundary = kWorldBoundary;
+  m_cubeShrinkTargetBoundary = kWorldBoundary;
   clearSoundEvents();
   m_quitRequested = false;
 }
@@ -99,6 +102,9 @@ void GameWorld::previewLevel(int levelIndex)
   m_velocityMagnitudeRate = 0.0f;
   m_thrustMagnitudeRate = 0.0f;
   m_fullStopRequested = false;
+  m_cubeShrinkElapsedSeconds = 0.0;
+  m_cubeShrinkStartBoundary = kWorldBoundary;
+  m_cubeShrinkTargetBoundary = kWorldBoundary;
   clearSoundEvents();
   setupLevel();
 }
@@ -254,6 +260,9 @@ void GameWorld::advanceToNextLevel()
     ++m_levelWrap;
   }
   m_levelElapsedSeconds = 0.0;
+  m_cubeShrinkElapsedSeconds = 0.0;
+  m_cubeShrinkStartBoundary = kWorldBoundary;
+  m_cubeShrinkTargetBoundary = kWorldBoundary;
   setupLevel();
 }
 
@@ -275,6 +284,7 @@ void GameWorld::updateRunning(const InputState& input)
   }
 
   m_levelElapsedSeconds += kFixedStepSeconds;
+  updateCubeShrink();
   Vec3 playerStartX;
   Vec3 playerStartY;
   Vec3 playerStartZ;
@@ -319,13 +329,14 @@ void GameWorld::updateRunning(const InputState& input)
   advanceAndReflectHull(m_player.position, m_player.velocity,
                         static_cast<float>(kFixedStepSeconds),
                         m_collisionGeometry.player, playerX, playerY,
-                        playerZ);
+                        playerZ, currentCubeBoundary());
   for (Rock& rock : m_rocks) {
     const float scale = rockScale(rock.type, rock.radius);
     advanceAndReflectHull(rock.position, rock.velocity,
                           static_cast<float>(kFixedStepSeconds),
                           hullForRock(rock.type), {scale, 0.0f, 0.0f},
-                          {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale});
+                          {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale},
+                          currentCubeBoundary());
   }
 
   updateBullets();
@@ -340,6 +351,63 @@ void GameWorld::updateRunning(const InputState& input)
 
   if (m_state == GameState::Running && m_rocks.empty())
     advanceToNextLevel();
+}
+
+void GameWorld::updateCubeShrink()
+{
+  const double interval = std::max(
+      1.0, 120.0 - 20.0 * static_cast<double>(m_levelWrap));
+  const double phase = std::fmod(m_levelElapsedSeconds, interval);
+  if (m_levelElapsedSeconds >= interval &&
+      m_cubeShrinkElapsedSeconds <= 0.0 && phase < kFixedStepSeconds) {
+    m_cubeShrinkStartBoundary = m_cubeShrinkTargetBoundary;
+    m_cubeShrinkTargetBoundary =
+        m_cubeShrinkStartBoundary * 0.80;
+    m_cubeShrinkElapsedSeconds = 5.0;
+  }
+
+  if (m_cubeShrinkElapsedSeconds <= 0.0)
+    return;
+
+  m_cubeShrinkElapsedSeconds =
+      std::max(0.0, m_cubeShrinkElapsedSeconds - kFixedStepSeconds);
+  const double boundary =
+      m_cubeShrinkStartBoundary +
+      (m_cubeShrinkTargetBoundary - m_cubeShrinkStartBoundary) *
+          (1.0 - m_cubeShrinkElapsedSeconds / 5.0);
+  Vec3 playerX;
+  Vec3 playerY;
+  Vec3 playerZ;
+  playerHullBasis(playerX, playerY, playerZ);
+  auto pushInward = [boundary](Vec3& position, Vec3& velocity,
+                               const ConvexHull& hull, const Vec3& xAxis,
+                               const Vec3& yAxis, const Vec3& zAxis) {
+    advanceAndReflectHull(position, velocity, 0.0f, hull, xAxis, yAxis, zAxis,
+                          static_cast<float>(boundary));
+  };
+  pushInward(m_player.position, m_player.velocity, m_collisionGeometry.player,
+             playerX, playerY, playerZ);
+  for (Rock& rock : m_rocks) {
+    const float scale = rockScale(rock.type, rock.radius);
+    pushInward(rock.position, rock.velocity, hullForRock(rock.type),
+               {scale, 0.0f, 0.0f}, {0.0f, scale, 0.0f},
+               {0.0f, 0.0f, scale});
+  }
+  const float bulletScale = m_collisionGeometry.bulletScale;
+  for (Bullet& bullet : m_bullets)
+    pushInward(bullet.position, bullet.velocity, m_collisionGeometry.bullet,
+               {bulletScale, 0.0f, 0.0f}, {0.0f, bulletScale, 0.0f},
+               {0.0f, 0.0f, bulletScale});
+}
+
+double GameWorld::cubeShrinkWarningRemainingSeconds() const
+{
+  const double interval = std::max(
+      1.0, 120.0 - 20.0 * static_cast<double>(m_levelWrap));
+  const double phase = std::fmod(m_levelElapsedSeconds, interval);
+  if (m_cubeShrinkElapsedSeconds > 0.0)
+    return 0.0;
+  return phase >= interval - 10.0 ? interval - phase : 0.0;
 }
 
 void GameWorld::updatePlayerAim(const InputState& input)
@@ -527,7 +595,8 @@ void GameWorld::updateBullets()
     const bool hitBorder = advanceAndReflectHull(
         nextPosition, nextVelocity, static_cast<float>(kFixedStepSeconds),
         m_collisionGeometry.bullet, {bulletScale, 0.0f, 0.0f},
-        {0.0f, bulletScale, 0.0f}, {0.0f, 0.0f, bulletScale});
+        {0.0f, bulletScale, 0.0f}, {0.0f, 0.0f, bulletScale},
+        currentCubeBoundary());
     bullet.age += static_cast<float>(kFixedStepSeconds);
     bullet.position = nextPosition;
     bullet.velocity = nextVelocity;
@@ -692,6 +761,17 @@ void GameWorld::playerHullBasis(Vec3& x, Vec3& y, Vec3& z) const
   x *= m_collisionGeometry.playerScale;
   y *= m_collisionGeometry.playerScale;
   z *= m_collisionGeometry.playerScale;
+}
+
+float GameWorld::currentCubeBoundary() const
+{
+  if (m_cubeShrinkElapsedSeconds > 0.0) {
+    return static_cast<float>(m_cubeShrinkStartBoundary +
+                              (m_cubeShrinkTargetBoundary -
+                               m_cubeShrinkStartBoundary) *
+                                  (1.0 - m_cubeShrinkElapsedSeconds / 5.0));
+  }
+  return static_cast<float>(m_cubeShrinkTargetBoundary);
 }
 
 void GameWorld::handlePlayerHit()

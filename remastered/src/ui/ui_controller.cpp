@@ -467,13 +467,21 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
     const std::string warning = "PROXIMITY ALERT";
     const float warningWidth =
         static_cast<float>(warning.size()) * 6.0f * warningScale;
-    const float warningPulse =
-        0.35f + 0.65f * (0.5f +
-                          0.5f * std::sin(static_cast<float>(elapsed * 9.0)));
     renderer.drawUiText(warning,
                         (renderer.width() - warningWidth) * 0.5f,
                         renderer.height() - 48.0f * sy, warningScale,
-                        kIndicator, warningPulse);
+                        kIndicator, 1.0f);
+  }
+
+  if (world.cubeShrinkWarningRemainingSeconds() > 0.0) {
+    constexpr std::string_view warning = "CUBE RECONFIGURATION IMMINENT";
+    const float warningScale = 2.2f * sy;
+    const float warningWidth =
+        static_cast<float>(warning.size()) * 6.0f * warningScale;
+    renderer.drawUiText(std::string(warning),
+                        (renderer.width() - warningWidth) * 0.5f,
+                        118.0f * sy, warningScale,
+                        {1.0f, 0.85f, 0.0f});
   }
 }
 
@@ -509,6 +517,30 @@ void UiController::draw(render::Renderer& renderer,
                         20.0f * sx, 12.0f * sy, 3.0f * sy, kText);
     renderer.drawUiText(formatLevelTime(world.levelElapsedSeconds()),
                         160.0f * sx, 12.0f * sy, 3.0f * sy, kText);
+    const float cubeCenterX = 415.0f * sx;
+    const float cubeCenterY = 48.0f * sy;
+    const float cubeEdge = 16.0f * sy;
+    const float cubeVertical = 19.0f * sy;
+    const float cubeLineWidth = 2.0f * std::min(sx, sy);
+    renderer.drawUiLine(cubeCenterX, cubeCenterY,
+                        cubeCenterX - cubeEdge, cubeCenterY + cubeVertical,
+                        cubeLineWidth, {0.20f, 1.0f, 0.25f});
+    renderer.drawUiLine(cubeCenterX, cubeCenterY,
+                        cubeCenterX + cubeEdge, cubeCenterY + cubeVertical,
+                        cubeLineWidth, {1.0f, 0.10f, 0.10f});
+    renderer.drawUiLine(cubeCenterX, cubeCenterY,
+                        cubeCenterX, cubeCenterY - cubeVertical,
+                        cubeLineWidth, {0.15f, 0.45f, 1.0f});
+    const std::string cubeLength = std::to_string(static_cast<int>(std::round(
+        world.cubeBoundary() * 2.0f)));
+    const float cubeTextScale = 1.9f * sy;
+    const float cubeTextX = 350.0f * sx;
+    renderer.drawUiText(cubeLength, cubeTextX, 74.0f * sy, cubeTextScale,
+                        kText);
+    const float cubeLengthWidth =
+        static_cast<float>(cubeLength.size()) * 6.0f * cubeTextScale;
+    renderer.drawUiText("3", cubeTextX + cubeLengthWidth + 1.0f * sx,
+                        69.0f * sy, 1.2f * sy, kText);
     renderer.drawUiText("LIVES " + std::to_string(world.lives()), 760.0f * sx,
                         12.0f * sy, 3.0f * sy, kText);
     renderer.drawUiText("FIRE", 535.0f * sx, 13.0f * sy, 2.0f * sy, kText);
