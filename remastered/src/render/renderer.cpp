@@ -685,8 +685,7 @@ void Renderer::drawWorld(const core::GameWorld& world)
 void Renderer::render(const core::GameWorld& world)
 {
   const core::Vec3 background = world.currentLevel().background;
-  glClearColor(background.x * 0.15f, background.y * 0.15f,
-               background.z * 0.15f, 1.0f);
+  glClearColor(background.x, background.y, background.z, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   drawWorld(world);
 }
