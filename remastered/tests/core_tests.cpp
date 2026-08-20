@@ -1,6 +1,8 @@
 #include "core/collision.h"
+#include "core/convex_hull.h"
 #include "core/game_world.h"
 #include "core/high_scores.h"
+#include "core/hulls.h"
 #include "core/math.h"
 
 #include <cmath>
@@ -368,6 +370,213 @@ void testHighScores()
          "top score ordering", test);
 }
 
+void testConvexHullDirect()
+{
+  constexpr const char* test = "convex hull direct";
+  using namespace geocube::core;
+
+  // Two unit cubes at the same position should intersect.
+  {
+    const ConvexHull& cube = cubeHull();
+    bool hit = hullsIntersect(cube, {0.0f, 0.0f, 0.0f},
+                              {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+                              {0.0f, 0.0f, 1.0f}, cube,
+                              {0.0f, 0.0f, 0.0f},
+                              {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+                              {0.0f, 0.0f, 1.0f});
+    expect(hit, "identical cubes intersect", test);
+  }
+
+  // Player hull inside cube hull.
+  {
+    const ConvexHull& p = playerHull();
+    const ConvexHull& c = cubeHull();
+    bool hit = hullsIntersect(p, {0.0f, 0.0f, 0.0f},
+                              {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+                              {0.0f, 0.0f, 1.0f}, c,
+                              {0.0f, 0.0f, 0.0f},
+                              {100.0f, 0.0f, 0.0f}, {0.0f, 100.0f, 0.0f},
+                              {0.0f, 0.0f, 100.0f});
+    expect(hit, "player inside large cube intersects", test);
+  }
+
+  // Surface distance is zero for contact and positive for separation.
+  {
+    const ConvexHull& cube = cubeHull();
+    const Vec3 identityX{1.0f, 0.0f, 0.0f};
+    const Vec3 identityY{0.0f, 1.0f, 0.0f};
+    const Vec3 identityZ{0.0f, 0.0f, 1.0f};
+    const HullTransform first{{0.0f, 0.0f, 0.0f}, identityX, identityY,
+                              identityZ};
+    const HullTransform separated{{0.0f, 0.0f, 2.0f}, identityX, identityY,
+                                  identityZ};
+    const HullTransform touching{{0.0f, 0.0f, 1.0f}, identityX, identityY,
+                                 identityZ};
+    expectNear(hullsDistance(cube, first, cube, separated), 1.0f,
+               "separated cube surface distance", test);
+    expectNear(hullsDistance(cube, first, cube, touching), 0.0f,
+               "touching cube surface distance", test);
+  }
+}
+
+void testConvexHullCollision()
+{
+  constexpr const char* test = "convex hull collision";
+  using namespace geocube::core;
+
+  auto toRunning = [](GameWorld& world) {
+    // startNewGame leaves state as Loading; one empty step sets it Running.
+    world.stepFixed({});
+    world.clearRocks();
+  };
+
+  // Player-vs-cube: far apart.
+  {
+    GameWorld world(0);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Cube, {1000.0f, 0.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::Running,
+           "player far from cube: no collision", test);
+  }
+
+  // Player-vs-cube: overlapping.
+  {
+    GameWorld world(1);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Cube, {0.0f, 0.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player inside cube: collision", test);
+  }
+
+  // Player-vs-cube: touching at edge.
+  {
+    GameWorld world(2);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    // Cube large radius is 200, hull scale = 100. Local cube is -0.5..0.5,
+    // so world half-extent is 50.  Cube at z=80 places its near face at
+    // z=30, exactly where the player nose sits.
+    world.spawnRock(RockSize::Large, RockType::Cube, {0.0f, 0.0f, 80.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player nose touching cube face: collision", test);
+  }
+
+  // Player-vs-cube: just separated.
+  {
+    GameWorld world(3);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    // Move cube 1 unit farther than the touching test.
+    world.spawnRock(RockSize::Large, RockType::Cube, {0.0f, 0.0f, 81.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::Running,
+           "player nose just outside cube: no collision", test);
+  }
+
+  // Player-vs-rod: overlapping (rod is stretched in Y).
+  {
+    GameWorld world(4);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Rod, {0.0f, 0.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player inside rod: collision", test);
+  }
+
+  // Player-vs-rod: touching along long axis.
+  {
+    GameWorld world(5);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    // Rod large radius=200, scale=200. Local Y is -1.25..1.25, so world Y
+    // is -250..250. Place player at Y=250 + ship extent ~10 => 260.
+    world.spawnRock(RockSize::Large, RockType::Rod, {0.0f, 260.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player touching rod top: collision", test);
+  }
+
+  // Player-vs-sphere: overlapping.
+  {
+    GameWorld world(6);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Sphere, {0.0f, 0.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player inside sphere: collision", test);
+  }
+
+  // Player-vs-cone: overlapping.
+  {
+    GameWorld world(7);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Cone, {0.0f, 0.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player inside cone: collision", test);
+  }
+
+  // Player-vs-rock: overlapping.
+  {
+    GameWorld world(8);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Rock, {0.0f, 0.0f, 0.0f});
+    world.stepFixed({});
+    expect(world.state() == GameState::PlayerHit,
+           "player inside rock: collision", test);
+  }
+
+  // Shield blocks hull collision without player hit.
+  {
+    GameWorld world(9);
+    world.startNewGame();
+    toRunning(world);
+    world.setPlayerPosition({0.0f, 0.0f, 0.0f});
+    world.spawnRock(RockSize::Large, RockType::Cube, {0.0f, 0.0f, 0.0f});
+    InputState shield;
+    shield.press(Action::Shield);
+    world.stepFixed(shield);
+    expect(world.state() == GameState::Running,
+           "shielded player inside cube: no hit", test);
+    expect(world.soundEventPending(SoundEvent::ShieldHit),
+           "shielded collision emits shield hit sound", test);
+  }
+
+  // Direct hull rotation test: identical cubes, one rotated 90 degrees.
+  {
+    const ConvexHull& cube = cubeHull();
+    // Cube A at origin with identity orientation.
+    // Cube B at z=1.0 (just touching face), rotated 90° around Y.
+    const Vec3 bPos = {0.0f, 0.0f, 1.0f};
+    const Vec3 bX = {0.0f, 0.0f, -1.0f}; // local X maps to -world Z
+    const Vec3 bY = {0.0f, 1.0f, 0.0f};  // local Y maps to world Y
+    const Vec3 bZ = {1.0f, 0.0f, 0.0f};  // local Z maps to world X
+    bool hit = hullsIntersect(cube, {0.0f, 0.0f, 0.0f},
+                              {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f},
+                              {0.0f, 0.0f, 1.0f}, cube, bPos,
+                              bX, bY, bZ);
+    expect(hit, "rotated touching cubes intersect", test);
+  }
+}
+
 } // namespace
 
 int main()
@@ -381,6 +590,8 @@ int main()
   testLevelTimerAndShield();
   testFireControl();
   testHighScores();
+  testConvexHullDirect();
+  testConvexHullCollision();
 
   if (failures != 0) {
     std::cerr << failures << " core test assertion(s) failed\n";

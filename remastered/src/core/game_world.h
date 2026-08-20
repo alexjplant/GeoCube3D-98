@@ -2,12 +2,14 @@
 #define GEOCUBE_CORE_GAME_WORLD_H
 
 #include "core/math.h"
+#include "core/convex_hull.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace geocube::core {
@@ -210,6 +212,11 @@ public:
   const std::vector<Bullet>& bullets() const { return m_bullets; }
   const std::string& playerName() const { return m_playerName; }
   const LevelDefinition& currentLevel() const;
+  float distanceToRockSurface(const Rock& rock) const;
+  void setCollisionGeometry(CollisionGeometry geometry)
+  {
+    m_collisionGeometry = std::move(geometry);
+  }
 
   int score() const { return m_score; }
   int lives() const { return m_lives; }
@@ -277,12 +284,17 @@ private:
   void updatePlayerThrust(const InputState& input);
   void updateBullets();
   void splitRock(std::size_t rockIndex);
-  void handlePlayerCollision();
+  void handlePlayerCollision(
+      const HullTransform& playerStart,
+      const std::vector<std::pair<std::uint32_t, HullTransform>>& rockStarts);
   void handlePlayerHit();
   Vec3 randomPosition();
   Vec3 randomVelocity();
   Vec3 randomOffset(float extent);
   void normalizePlayerOrientation();
+  const ConvexHull& hullForRock(RockType type) const;
+  float rockScale(RockType type, float radius) const;
+  void playerHullBasis(Vec3& x, Vec3& y, Vec3& z) const;
 
   std::mt19937 m_random;
   std::string m_playerName;
@@ -312,6 +324,7 @@ private:
   bool m_fullStopRequested = false;
   std::array<bool, soundEventIndex(SoundEvent::Count)> m_soundEvents{};
   bool m_quitRequested = false;
+  CollisionGeometry m_collisionGeometry = defaultCollisionGeometry();
 };
 
 } // namespace geocube::core

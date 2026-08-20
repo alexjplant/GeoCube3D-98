@@ -2,6 +2,7 @@
 #define GEOCUBE_CORE_COLLISION_H
 
 #include "core/math.h"
+#include "core/convex_hull.h"
 
 namespace geocube::core {
 
@@ -30,6 +31,10 @@ bool segmentIntersectsSphere(const Vec3& start, const Vec3& end,
 // Advances a bounded entity and reflects it from the six legacy cube walls.
 bool advanceAndReflect(Vec3& position, Vec3& velocity, float seconds,
                        float boundary = kWorldBoundary);
+bool advanceAndReflectHull(Vec3& position, Vec3& velocity, float seconds,
+                           const ConvexHull& hull, const Vec3& xAxis,
+                           const Vec3& yAxis, const Vec3& zAxis,
+                           float boundary = kWorldBoundary);
 
 } // namespace geocube::core
 

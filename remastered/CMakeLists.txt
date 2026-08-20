@@ -81,8 +81,10 @@ add_executable(geocube3d
 
 add_library(geocube_core STATIC
   src/core/collision.cpp
+  src/core/convex_hull.cpp
   src/core/game_world.cpp
   src/core/high_scores.cpp
+  src/core/hulls.cpp
 )
 
 target_compile_features(geocube_core PUBLIC cxx_std_17)

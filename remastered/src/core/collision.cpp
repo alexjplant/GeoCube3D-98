@@ -76,4 +76,41 @@ bool advanceAndReflect(Vec3& position, Vec3& velocity, float seconds,
   return collided;
 }
 
+bool advanceAndReflectHull(Vec3& position, Vec3& velocity, float seconds,
+                           const ConvexHull& hull, const Vec3& xAxis,
+                           const Vec3& yAxis, const Vec3& zAxis,
+                           float boundary)
+{
+  position += velocity * seconds;
+  bool collided = false;
+  float minimum[3] = {1.0e30f, 1.0e30f, 1.0e30f};
+  float maximum[3] = {-1.0e30f, -1.0e30f, -1.0e30f};
+  for (const Vec3& local : hull.localVertices) {
+    const Vec3 point = position + xAxis * local.x + yAxis * local.y +
+                       zAxis * local.z;
+    minimum[0] = std::min(minimum[0], point.x);
+    minimum[1] = std::min(minimum[1], point.y);
+    minimum[2] = std::min(minimum[2], point.z);
+    maximum[0] = std::max(maximum[0], point.x);
+    maximum[1] = std::max(maximum[1], point.y);
+    maximum[2] = std::max(maximum[2], point.z);
+  }
+
+  float* coordinates[3] = {&position.x, &position.y, &position.z};
+  float* components[3] = {&velocity.x, &velocity.y, &velocity.z};
+  for (int axis = 0; axis < 3; ++axis) {
+    if (minimum[axis] < -boundary) {
+      *coordinates[axis] += -boundary - minimum[axis];
+      *components[axis] = std::fabs(*components[axis]);
+      collided = true;
+    }
+    if (maximum[axis] > boundary) {
+      *coordinates[axis] -= maximum[axis] - boundary;
+      *components[axis] = -std::fabs(*components[axis]);
+      collided = true;
+    }
+  }
+  return collided;
+}
+
 } // namespace geocube::core

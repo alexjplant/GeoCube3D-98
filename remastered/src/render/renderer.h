@@ -48,6 +48,10 @@ public:
 
   const std::string& error() const { return m_error; }
   bool texturePipelineReady() const { return m_canvasTexture != 0; }
+  const core::CollisionGeometry& collisionGeometry() const
+  {
+    return m_collisionGeometry;
+  }
 
 private:
   struct GlApi;
@@ -96,6 +100,8 @@ private:
   std::array<GpuModel, 5> m_rockModels{};
   std::array<GpuModel, 4> m_referenceModels{};
   float m_playerScale = 20.0f;
+  core::CollisionGeometry m_collisionGeometry =
+      core::defaultCollisionGeometry();
   std::filesystem::path m_root;
   std::string m_error;
   int m_width = 1;

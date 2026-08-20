@@ -5,6 +5,8 @@
 #include "platform/settings.h"
 #include "render/renderer.h"
 
+#include "core/math.h"
+
 #include <string_view>
 
 namespace geocube::ui {
@@ -65,6 +67,10 @@ private:
   int m_pauseSelection = 0;
   bool m_waitingForBinding = false;
   bool m_scoreInserted = false;
+  mutable core::Vec3 m_displayVelocity;
+  mutable core::Vec3 m_displayThrust;
+  mutable float m_displayVelocityRate = 0.0f;
+  mutable float m_displayThrustRate = 0.0f;
 };
 
 } // namespace geocube::ui

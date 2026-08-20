@@ -389,6 +389,10 @@ bool Renderer::loadPlayerModel(const std::filesystem::path& root)
     m_playerScale = 20.0f;
   else
     model = createShipFallback();
+  m_collisionGeometry.player = core::makeConvexHull(model.vertices,
+                                                    model.indices);
+  m_collisionGeometry.playerScale = m_playerScale;
+  m_collisionGeometry.playerRotationY180 = true;
   return createModel(model, m_playerModel);
 }
 
@@ -425,11 +429,21 @@ void Renderer::createPrimitiveModels(const std::filesystem::path& root)
   std::string error;
   if (!loadObjModel(root / "models/cube.obj", cube, error))
     cube = createPrimitive(core::RockType::Cube);
+  m_collisionGeometry.rocks[static_cast<std::size_t>(core::RockType::Cube)] =
+      core::makeConvexHull(cube.vertices, cube.indices);
+  m_collisionGeometry.rockScaleFactors[
+      static_cast<std::size_t>(core::RockType::Cube)] = 0.5f;
+  m_collisionGeometry.bullet = core::makeConvexHull(cube.vertices);
+  m_collisionGeometry.bulletScale = 4.0f;
   createModel(cube, m_rockModels[static_cast<std::size_t>(
                        core::RockType::Cube)]);
-  for (int type = 1; type < 5; ++type)
-    createModel(createPrimitive(static_cast<core::RockType>(type)),
-                m_rockModels[static_cast<std::size_t>(type)]);
+  for (int type = 1; type < 5; ++type) {
+    Model model = createPrimitive(static_cast<core::RockType>(type));
+    m_collisionGeometry.rocks[static_cast<std::size_t>(type)] =
+        core::makeConvexHull(model.vertices, model.indices);
+    m_collisionGeometry.rockScaleFactors[static_cast<std::size_t>(type)] = 1.0f;
+    createModel(model, m_rockModels[static_cast<std::size_t>(type)]);
+  }
 }
 
 bool Renderer::loadReferenceModels(const std::filesystem::path& root)

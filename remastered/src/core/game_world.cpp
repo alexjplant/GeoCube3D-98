@@ -1,6 +1,7 @@
 #include "core/game_world.h"
 
 #include "core/collision.h"
+#include "core/hulls.h"
 
 #include <algorithm>
 #include <cmath>
@@ -10,8 +11,6 @@ namespace {
 
 // Legacy gameplay.cpp scales ship.x by .20 and uses the original 1000-unit
 // cube with 500 units/s^2 thrust and a 750-unit/s bullet launch speed.
-constexpr float kPlayerRadius = 10.0f;
-constexpr float kBulletRadius = 1.0f;
 constexpr float kThrustAcceleration = 500.0f;
 constexpr float kBulletSpeed = 750.0f;
 constexpr float kBulletLifetime = 5.0f;
@@ -276,6 +275,20 @@ void GameWorld::updateRunning(const InputState& input)
   }
 
   m_levelElapsedSeconds += kFixedStepSeconds;
+  Vec3 playerStartX;
+  Vec3 playerStartY;
+  Vec3 playerStartZ;
+  playerHullBasis(playerStartX, playerStartY, playerStartZ);
+  const HullTransform playerStart{m_player.position, playerStartX,
+                                 playerStartY, playerStartZ};
+  std::vector<std::pair<std::uint32_t, HullTransform>> rockStarts;
+  rockStarts.reserve(m_rocks.size());
+  for (const Rock& rock : m_rocks) {
+    const float scale = rockScale(rock.type, rock.radius);
+    rockStarts.emplace_back(
+        rock.id, HullTransform{rock.position, {scale, 0.0f, 0.0f},
+                               {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale}});
+  }
   const float previousVelocityMagnitude = length(m_player.velocity);
   const float previousThrustMagnitude = length(m_player.thrust);
 
@@ -299,14 +312,24 @@ void GameWorld::updateRunning(const InputState& input)
   if (!m_fireUpdatedByAdvance)
     updateFire(input, kFixedStepSeconds);
 
-  advanceAndReflect(m_player.position, m_player.velocity,
-                    static_cast<float>(kFixedStepSeconds));
-  for (Rock& rock : m_rocks)
-    advanceAndReflect(rock.position, rock.velocity,
-                      static_cast<float>(kFixedStepSeconds));
+  Vec3 playerX;
+  Vec3 playerY;
+  Vec3 playerZ;
+  playerHullBasis(playerX, playerY, playerZ);
+  advanceAndReflectHull(m_player.position, m_player.velocity,
+                        static_cast<float>(kFixedStepSeconds),
+                        m_collisionGeometry.player, playerX, playerY,
+                        playerZ);
+  for (Rock& rock : m_rocks) {
+    const float scale = rockScale(rock.type, rock.radius);
+    advanceAndReflectHull(rock.position, rock.velocity,
+                          static_cast<float>(kFixedStepSeconds),
+                          hullForRock(rock.type), {scale, 0.0f, 0.0f},
+                          {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale});
+  }
 
   updateBullets();
-  handlePlayerCollision();
+  handlePlayerCollision(playerStart, rockStarts);
 
   m_velocityMagnitudeRate =
       (length(m_player.velocity) - previousVelocityMagnitude) /
@@ -500,8 +523,11 @@ void GameWorld::updateBullets()
     const Vec3 oldPosition = bullet.position;
     Vec3 nextPosition = bullet.position;
     Vec3 nextVelocity = bullet.velocity;
-    const bool hitBorder = advanceAndReflect(
-        nextPosition, nextVelocity, static_cast<float>(kFixedStepSeconds));
+    const float bulletScale = m_collisionGeometry.bulletScale;
+    const bool hitBorder = advanceAndReflectHull(
+        nextPosition, nextVelocity, static_cast<float>(kFixedStepSeconds),
+        m_collisionGeometry.bullet, {bulletScale, 0.0f, 0.0f},
+        {0.0f, bulletScale, 0.0f}, {0.0f, 0.0f, bulletScale});
     bullet.age += static_cast<float>(kFixedStepSeconds);
     bullet.position = nextPosition;
     bullet.velocity = nextVelocity;
@@ -518,9 +544,27 @@ void GameWorld::updateBullets()
     for (std::size_t rockIndex = 0; rockIndex < m_rocks.size();
          ++rockIndex) {
       const Rock& rock = m_rocks[rockIndex];
-      if (segmentIntersectsSphere(oldPosition, bullet.position,
-                                   rock.position,
-                                   rock.radius + kBulletRadius)) {
+      const float rockScaleValue = rockScale(rock.type, rock.radius);
+      const float bulletScaleValue = m_collisionGeometry.bulletScale;
+      if (sweptHullsIntersect(
+              m_collisionGeometry.bullet,
+              HullTransform{oldPosition,
+                            {bulletScaleValue, 0.0f, 0.0f},
+                            {0.0f, bulletScaleValue, 0.0f},
+                            {0.0f, 0.0f, bulletScaleValue}},
+              HullTransform{bullet.position,
+                            {bulletScaleValue, 0.0f, 0.0f},
+                            {0.0f, bulletScaleValue, 0.0f},
+                            {0.0f, 0.0f, bulletScaleValue}},
+              hullForRock(rock.type),
+              HullTransform{rock.position,
+                            {rockScaleValue, 0.0f, 0.0f},
+                            {0.0f, rockScaleValue, 0.0f},
+                            {0.0f, 0.0f, rockScaleValue}},
+              HullTransform{rock.position,
+                            {rockScaleValue, 0.0f, 0.0f},
+                            {0.0f, rockScaleValue, 0.0f},
+                            {0.0f, 0.0f, rockScaleValue}})) {
         emitSoundEvent(SoundEvent::Hit);
         bullet.state = BulletState::Exploding;
         splitRock(rockIndex);
@@ -564,11 +608,31 @@ void GameWorld::splitRock(std::size_t rockIndex)
   }
 }
 
-void GameWorld::handlePlayerCollision()
+void GameWorld::handlePlayerCollision(
+    const HullTransform& playerStart,
+    const std::vector<std::pair<std::uint32_t, HullTransform>>& rockStarts)
 {
+  Vec3 playerX;
+  Vec3 playerY;
+  Vec3 playerZ;
+  playerHullBasis(playerX, playerY, playerZ);
+
   for (const Rock& rock : m_rocks) {
-    if (!spheresIntersect(m_player.position, kPlayerRadius, rock.position,
-                          rock.radius))
+    const float scale = rockScale(rock.type, rock.radius);
+    const auto start = std::find_if(
+        rockStarts.begin(), rockStarts.end(),
+        [&rock](const auto& value) { return value.first == rock.id; });
+    const HullTransform rockStart =
+        start == rockStarts.end()
+            ? HullTransform{rock.position, {scale, 0.0f, 0.0f},
+                            {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale}}
+            : start->second;
+    if (!sweptHullsIntersect(
+            m_collisionGeometry.player, playerStart,
+            HullTransform{m_player.position, playerX, playerY, playerZ},
+            hullForRock(rock.type), rockStart,
+            HullTransform{rock.position, {scale, 0.0f, 0.0f},
+                          {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale}}))
       continue;
 
     if (m_player.shield) {
@@ -583,6 +647,51 @@ void GameWorld::handlePlayerCollision()
     clearBullets();
     return;
   }
+}
+
+const ConvexHull& GameWorld::hullForRock(RockType type) const
+{
+  return m_collisionGeometry.rocks[static_cast<std::size_t>(type)];
+}
+
+float GameWorld::distanceToRockSurface(const Rock& rock) const
+{
+  Vec3 playerX;
+  Vec3 playerY;
+  Vec3 playerZ;
+  playerHullBasis(playerX, playerY, playerZ);
+  const float scale = rockScale(rock.type, rock.radius);
+  return hullsDistance(
+      m_collisionGeometry.player,
+      HullTransform{m_player.position, playerX, playerY, playerZ},
+      hullForRock(rock.type),
+      HullTransform{rock.position, {scale, 0.0f, 0.0f},
+                    {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale}});
+}
+
+float GameWorld::rockScale(RockType type, float radius) const
+{
+  return radius *
+         m_collisionGeometry.rockScaleFactors[static_cast<std::size_t>(type)];
+}
+
+void GameWorld::playerHullBasis(Vec3& x, Vec3& y, Vec3& z) const
+{
+  const Vec3 forward = normalized(m_player.direction);
+  const Vec3 up = normalized(m_player.up);
+  const Vec3 right = lengthSquared(cross(up, forward)) > 0.0f
+                         ? normalized(cross(up, forward))
+                         : Vec3{1.0f, 0.0f, 0.0f};
+  x = right;
+  y = up;
+  z = forward;
+  if (m_collisionGeometry.playerRotationY180) {
+    x = -x;
+    z = -z;
+  }
+  x *= m_collisionGeometry.playerScale;
+  y *= m_collisionGeometry.playerScale;
+  z *= m_collisionGeometry.playerScale;
 }
 
 void GameWorld::handlePlayerHit()

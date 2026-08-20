@@ -53,6 +53,10 @@ bool UiController::initialize(platform::Settings settings)
   m_pauseSelection = 0;
   m_waitingForBinding = false;
   m_scoreInserted = false;
+  m_displayVelocity = {};
+  m_displayThrust = {};
+  m_displayVelocityRate = 0.0f;
+  m_displayThrustRate = 0.0f;
   return true;
 }
 
@@ -280,12 +284,20 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
 
   const float centerX = renderer.width() * 0.5f;
   const float centerY = renderer.height() * 0.5f;
+  constexpr float kSmoothing = 0.2f;
+  m_displayVelocity +=
+      (world.player().velocity - m_displayVelocity) * kSmoothing;
+  m_displayThrust += (world.player().thrust - m_displayThrust) * kSmoothing;
+  m_displayVelocityRate +=
+      (world.velocityMagnitudeRate() - m_displayVelocityRate) * kSmoothing;
+  m_displayThrustRate +=
+      (world.thrustMagnitudeRate() - m_displayThrustRate) * kSmoothing;
   const core::Vec3 right =
       core::normalized(core::cross(world.player().up, world.player().direction));
   const auto drawVectorIndicator = [&](const core::Vec3& vector,
                                        float maximumMagnitude,
                                        const core::Vec3& color, float anchorX,
-                                       float rateOfChange) {
+                                            float rateOfChange) {
     const float magnitude = core::length(vector);
     float directionX = 0.0f;
     float directionY = 0.0f;
@@ -295,9 +307,9 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
       directionY = -core::dot(normalizedVector, world.player().up);
     }
     const float lineLength = maximumMagnitude > 0.0f
-                                 ? std::min(100.0f * indicatorScale,
+                                 ? std::min(200.0f * indicatorScale,
                                             magnitude / maximumMagnitude *
-                                                100.0f * indicatorScale)
+                                                200.0f * indicatorScale)
                                  : 0.0f;
     renderer.drawUiLine(anchorX, centerY, anchorX + directionX * lineLength,
                         centerY + directionY * lineLength,
@@ -311,12 +323,12 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
     renderer.drawUiText(details, anchorX - 32.0f * indicatorScale,
                         centerY + 16.0f * sy, textScale, color);
   };
-  drawVectorIndicator(world.player().velocity, core::kMaxVelocity,
-                      {1.0f, 0.0f, 0.0f}, centerX - 20.0f * sx,
-                      world.velocityMagnitudeRate());
-  drawVectorIndicator(world.player().thrust, 500.0f * 1.41421356f,
-                      {1.0f, 0.85f, 0.0f}, centerX + 20.0f * sx,
-                      world.thrustMagnitudeRate());
+  drawVectorIndicator(m_displayVelocity, core::kMaxVelocity,
+                      {1.0f, 0.0f, 0.0f}, centerX - 32.0f * sx,
+                      m_displayVelocityRate);
+  drawVectorIndicator(m_displayThrust, 500.0f * 1.41421356f,
+                      {1.0f, 0.85f, 0.0f}, centerX + 32.0f * sx,
+                      m_displayThrustRate);
 
   const float borderLeft = 24.0f * sx;
   const float borderRight = renderer.width() - 24.0f * sx;
@@ -326,7 +338,12 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
   const float originY = shipY;
   const double elapsed = world.levelElapsedSeconds();
 
+  bool proximityAlert = false;
   for (const core::Rock& rock : world.rocks()) {
+    const float distance = world.distanceToRockSurface(rock);
+    if (distance < 100.0f)
+      proximityAlert = true;
+
     float rockX = 0.0f;
     float rockY = 0.0f;
     bool rockInFront = false;
@@ -378,7 +395,6 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
     const float baseX = arrowX - directionX * arrowSize * 0.8f;
     const float baseY = arrowY - directionY * arrowSize * 0.8f;
     const float halfBase = arrowSize * 0.7f;
-    const float distance = core::length(rock.position - world.player().position);
     const bool close = distance <= kIndicatorCloseDistance;
     const float flash = close
                             ? std::max(0.0f, std::sin(static_cast<float>(
@@ -402,7 +418,21 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
     textX = std::clamp(textX, 4.0f, renderer.width() - textWidth - 4.0f);
     textY = std::clamp(textY, 4.0f,
                        renderer.height() - 8.0f * textScale - 4.0f);
-    renderer.drawUiText(distanceText, textX, textY, textScale, kIndicator, 1.0f);
+     renderer.drawUiText(distanceText, textX, textY, textScale, kIndicator, 1.0f);
+  }
+
+  if (proximityAlert) {
+    const float warningScale = 4.5f * sy;
+    const std::string warning = "PROXIMITY ALERT";
+    const float warningWidth =
+        static_cast<float>(warning.size()) * 6.0f * warningScale;
+    const float warningPulse =
+        0.35f + 0.65f * (0.5f +
+                          0.5f * std::sin(static_cast<float>(elapsed * 9.0)));
+    renderer.drawUiText(warning,
+                        (renderer.width() - warningWidth) * 0.5f,
+                        renderer.height() - 48.0f * sy, warningScale,
+                        kIndicator, warningPulse);
   }
 }
 

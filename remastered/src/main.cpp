@@ -141,6 +141,7 @@ public:
                 << '\n';
       return false;
     }
+    m_world.setCollisionGeometry(m_renderer.collisionGeometry());
     m_settingsStore.load(m_settings);
 #ifndef __EMSCRIPTEN__
     m_shell.setFullscreen(m_settings.fullscreen);
