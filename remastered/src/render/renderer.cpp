@@ -696,6 +696,29 @@ void Renderer::drawUiTriangle(float tipX, float tipY, float baseLeftX,
                  color, alpha);
 }
 
+void Renderer::drawUiLine(float startX, float startY, float endX, float endY,
+                          float width, const core::Vec3& color, float alpha)
+{
+  const float directionX = endX - startX;
+  const float directionY = endY - startY;
+  const float length = std::sqrt(directionX * directionX +
+                                 directionY * directionY);
+  if (length <= 1.0e-5f)
+    return;
+
+  const float offsetX = -directionY / length * width * 0.5f;
+  const float offsetY = directionX / length * width * 0.5f;
+  drawUiVertices(
+      GL_TRIANGLES,
+      {{startX + offsetX, startY + offsetY, 0.0f},
+       {endX + offsetX, endY + offsetY, 0.0f},
+       {endX - offsetX, endY - offsetY, 0.0f},
+       {startX + offsetX, startY + offsetY, 0.0f},
+       {endX - offsetX, endY - offsetY, 0.0f},
+       {startX - offsetX, startY - offsetY, 0.0f}},
+      color, alpha);
+}
+
 void Renderer::drawUiText(const std::string& text, float x, float y,
                           float scaleValue, const core::Vec3& color,
                           float alpha)

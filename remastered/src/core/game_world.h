@@ -169,6 +169,7 @@ struct PlayerState {
   Vec3 direction{0.0f, 0.0f, 1.0f};
   Vec3 up{0.0f, 1.0f, 0.0f};
   Vec3 velocity;
+  Vec3 thrust;
   bool shield = false;
 };
 
@@ -221,6 +222,8 @@ public:
   double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
   double thrustRemainingSeconds() const { return m_thrustRemainingSeconds; }
   double fireRemainingSeconds() const { return m_fireRemainingSeconds; }
+  float velocityMagnitudeRate() const { return m_velocityMagnitudeRate; }
+  float thrustMagnitudeRate() const { return m_thrustMagnitudeRate; }
   bool soundEventPending(SoundEvent event) const
   {
     return m_soundEvents[soundEventIndex(event)];
@@ -301,6 +304,8 @@ private:
   double m_fireRemainingSeconds = kFireMaximumSeconds;
   double m_fireHeldSeconds = 0.0;
   double m_fireAutoElapsedSeconds = 0.0;
+  float m_velocityMagnitudeRate = 0.0f;
+  float m_thrustMagnitudeRate = 0.0f;
   bool m_shieldUpdatedByAdvance = false;
   bool m_thrustFuelUpdatedByAdvance = false;
   bool m_fireUpdatedByAdvance = false;

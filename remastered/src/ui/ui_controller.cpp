@@ -1,5 +1,6 @@
 #include "ui/ui_controller.h"
 
+#include "core/collision.h"
 #include "core/high_scores.h"
 
 #include <algorithm>
@@ -276,6 +277,46 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
   renderer.projectWorldToUi(world, world.player().position, shipX, shipY,
                             shipInFront);
   (void)shipInFront;
+
+  const float centerX = renderer.width() * 0.5f;
+  const float centerY = renderer.height() * 0.5f;
+  const core::Vec3 right =
+      core::normalized(core::cross(world.player().up, world.player().direction));
+  const auto drawVectorIndicator = [&](const core::Vec3& vector,
+                                       float maximumMagnitude,
+                                       const core::Vec3& color, float anchorX,
+                                       float rateOfChange) {
+    const float magnitude = core::length(vector);
+    float directionX = 0.0f;
+    float directionY = 0.0f;
+    if (magnitude > 1.0e-5f) {
+      const core::Vec3 normalizedVector = vector / magnitude;
+      directionX = -core::dot(normalizedVector, right);
+      directionY = -core::dot(normalizedVector, world.player().up);
+    }
+    const float lineLength = maximumMagnitude > 0.0f
+                                 ? std::min(100.0f * indicatorScale,
+                                            magnitude / maximumMagnitude *
+                                                100.0f * indicatorScale)
+                                 : 0.0f;
+    renderer.drawUiLine(anchorX, centerY, anchorX + directionX * lineLength,
+                        centerY + directionY * lineLength,
+                        3.0f * indicatorScale, color);
+
+    const std::string details =
+        "MAG " + std::to_string(static_cast<int>(std::round(magnitude))) +
+        "\nRATE " +
+        std::to_string(static_cast<int>(std::round(rateOfChange)));
+    const float textScale = 1.4f * sy;
+    renderer.drawUiText(details, anchorX - 32.0f * indicatorScale,
+                        centerY + 16.0f * sy, textScale, color);
+  };
+  drawVectorIndicator(world.player().velocity, core::kMaxVelocity,
+                      {1.0f, 0.0f, 0.0f}, centerX - 20.0f * sx,
+                      world.velocityMagnitudeRate());
+  drawVectorIndicator(world.player().thrust, 500.0f * 1.41421356f,
+                      {1.0f, 0.85f, 0.0f}, centerX + 20.0f * sx,
+                      world.thrustMagnitudeRate());
 
   const float borderLeft = 24.0f * sx;
   const float borderRight = renderer.width() - 24.0f * sx;

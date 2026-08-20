@@ -35,6 +35,9 @@ public:
   void drawUiTriangle(float tipX, float tipY, float baseLeftX, float baseLeftY,
                       float baseRightX, float baseRightY,
                       const core::Vec3& color, float alpha = 1.0f);
+  void drawUiLine(float startX, float startY, float endX, float endY,
+                  float width, const core::Vec3& color,
+                  float alpha = 1.0f);
   void drawUiText(const std::string& text, float x, float y, float scale,
                   const core::Vec3& color, float alpha = 1.0f);
   bool projectWorldToUi(const core::GameWorld& world,

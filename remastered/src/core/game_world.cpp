@@ -79,6 +79,8 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_fireRemainingSeconds = kFireMaximumSeconds;
   m_fireHeldSeconds = 0.0;
   m_fireAutoElapsedSeconds = 0.0;
+  m_velocityMagnitudeRate = 0.0f;
+  m_thrustMagnitudeRate = 0.0f;
   m_fullStopRequested = false;
   clearSoundEvents();
   m_quitRequested = false;
@@ -95,6 +97,8 @@ void GameWorld::previewLevel(int levelIndex)
   m_fireRemainingSeconds = kFireMaximumSeconds;
   m_fireHeldSeconds = 0.0;
   m_fireAutoElapsedSeconds = 0.0;
+  m_velocityMagnitudeRate = 0.0f;
+  m_thrustMagnitudeRate = 0.0f;
   m_fullStopRequested = false;
   clearSoundEvents();
   setupLevel();
@@ -222,8 +226,11 @@ void GameWorld::setupLevel()
   m_bullets.clear();
   m_player.position = {};
   m_player.velocity = {};
+  m_player.thrust = {};
   m_player.shield = false;
   m_fullStopRequested = false;
+  m_velocityMagnitudeRate = 0.0f;
+  m_thrustMagnitudeRate = 0.0f;
   m_player.direction = {0.0f, 0.0f, 1.0f};
   m_player.up = {0.0f, 1.0f, 0.0f};
 
@@ -269,6 +276,8 @@ void GameWorld::updateRunning(const InputState& input)
   }
 
   m_levelElapsedSeconds += kFixedStepSeconds;
+  const float previousVelocityMagnitude = length(m_player.velocity);
+  const float previousThrustMagnitude = length(m_player.thrust);
 
   if (input.isHeld(Action::ZoomIn))
     m_fieldOfView = std::max(kMinimumFieldOfView,
@@ -298,6 +307,13 @@ void GameWorld::updateRunning(const InputState& input)
 
   updateBullets();
   handlePlayerCollision();
+
+  m_velocityMagnitudeRate =
+      (length(m_player.velocity) - previousVelocityMagnitude) /
+      static_cast<float>(kFixedStepSeconds);
+  m_thrustMagnitudeRate =
+      (length(m_player.thrust) - previousThrustMagnitude) /
+      static_cast<float>(kFixedStepSeconds);
 
   if (m_state == GameState::Running && m_rocks.empty())
     advanceToNextLevel();
@@ -331,16 +347,20 @@ void GameWorld::updatePlayerAim(const InputState& input)
 
 void GameWorld::updatePlayerThrust(const InputState& input)
 {
+  m_player.thrust = {};
   const float thrustStep =
       kThrustAcceleration * static_cast<float>(kFixedStepSeconds);
   if (m_fullStopRequested) {
     const float speed = length(m_player.velocity);
     if (speed <= thrustStep) {
+      if (m_thrustRemainingSeconds > 0.0)
+        m_player.thrust = -normalized(m_player.velocity) * kThrustAcceleration;
       m_player.velocity = {};
       m_fullStopRequested = false;
     } else if (m_thrustRemainingSeconds <= 0.0) {
       m_fullStopRequested = false;
     } else {
+      m_player.thrust = -normalized(m_player.velocity) * kThrustAcceleration;
       m_player.velocity = normalized(m_player.velocity) * (speed - thrustStep);
     }
     return;
@@ -366,6 +386,7 @@ void GameWorld::updatePlayerThrust(const InputState& input)
     delta -= right;
 
   // The legacy thrust model accelerates by 500 world units per second.
+  m_player.thrust = delta * kThrustAcceleration;
   m_player.velocity += delta * thrustStep;
   const float speed = length(m_player.velocity);
   if (speed > kMaxVelocity)
