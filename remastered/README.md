@@ -25,12 +25,13 @@ Controls documented by `g_aHelpText` in `src/gameplay.cpp:75-87`:
 | --- | --- |
 | Aim ship up/down/left/right | Arrow keys |
 | Zoom in/out | Page Up / Page Down; numpad 9 / numpad 3 |
-| Thrust forward/backward | A / Z |
-| Thrust left/right | `<` / `>` (comma / period) |
+| Thrust forward/backward | W / S |
+| Thrust left/right | A / D |
+| Zoom in/out | R / F |
 | Fire | Ctrl |
-| Shield | S |
+| Shield | Left Shift |
 | Pause | Pause key |
-| Full stop | Numpad 5 |
+| Full stop | E |
 | Quit | Escape |
 
 The active code also maps F1 to Help and H to High Scores in

@@ -19,6 +19,25 @@ void expect(bool condition, const char* message)
 
 int main()
 {
+  const geocube::platform::Settings defaults;
+  const auto& controls = defaults.controls;
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::ThrustForward)] == "W",
+         "forward thrust default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::ThrustBackward)] == "S",
+         "backward thrust default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::ThrustLeft)] == "A",
+         "left thrust default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::ThrustRight)] == "D",
+         "right thrust default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::Shield)] == "Left Shift",
+         "shield default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::FullStop)] == "E",
+         "full stop default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::ZoomIn)] == "R",
+         "zoom in default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::ZoomOut)] == "F",
+         "zoom out default");
+
   const std::filesystem::path directory =
       std::filesystem::temp_directory_path() / "geocube3d-settings-test";
   std::error_code error;

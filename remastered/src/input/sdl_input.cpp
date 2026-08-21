@@ -14,6 +14,7 @@ void SdlInput::setBindings(const platform::ControlBindings& bindings)
 
 SDL_Keycode SdlInput::keyFromName(const std::string& name)
 {
+  if (name == "Left Shift") return SDLK_LSHIFT;
   if (name == "Numpad 5") return SDLK_KP_5;
   if (name == "Page Up") return SDLK_PAGEUP;
   if (name == "Page Down") return SDLK_PAGEDOWN;

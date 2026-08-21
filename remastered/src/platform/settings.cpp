@@ -18,18 +18,18 @@ ControlBindings defaultControlBindings()
   set(core::Action::AimDown, "Down");
   set(core::Action::AimLeft, "Left");
   set(core::Action::AimRight, "Right");
-  set(core::Action::ThrustForward, "A");
-  set(core::Action::ThrustBackward, "Z");
-  set(core::Action::ThrustLeft, "Comma");
-  set(core::Action::ThrustRight, "Period");
+  set(core::Action::ThrustForward, "W");
+  set(core::Action::ThrustBackward, "S");
+  set(core::Action::ThrustLeft, "A");
+  set(core::Action::ThrustRight, "D");
   set(core::Action::Fire, "Space");
-  set(core::Action::Shield, "S");
+  set(core::Action::Shield, "Left Shift");
   set(core::Action::Pause, "Pause");
-  set(core::Action::FullStop, "C");
+  set(core::Action::FullStop, "E");
   set(core::Action::HighScores, "H");
   set(core::Action::Quit, "Escape");
-  set(core::Action::ZoomIn, "Page Up");
-  set(core::Action::ZoomOut, "Page Down");
+  set(core::Action::ZoomIn, "R");
+  set(core::Action::ZoomOut, "F");
   set(core::Action::Confirm, "Return");
   // Back navigation is always Escape. Backspace is reserved for text editing.
   return bindings;
