@@ -489,6 +489,25 @@ void UiController::drawGameplayIndicators(render::Renderer& renderer,
                         118.0f * sy, warningScale,
                         {1.0f, 0.85f, 0.0f});
   }
+  if (world.cubeReconfiguringRemainingSeconds() > 0.0) {
+    constexpr std::string_view message = "cube reconfiguring...";
+    const float messageScale = 2.2f * sy;
+    const float messageWidth =
+        static_cast<float>(message.size()) * 6.0f * messageScale;
+    const float flash = std::sin(static_cast<float>(elapsed * 4.0 * 3.14159265359));
+    if (flash >= 0.0f)
+      renderer.drawUiText(std::string(message),
+                          (renderer.width() - messageWidth) * 0.5f,
+                          118.0f * sy, messageScale, {1.0f, 0.85f, 0.0f});
+  } else if (world.cubeConstrainedRemainingSeconds() > 0.0) {
+    constexpr std::string_view message = "cube constrained";
+    const float messageScale = 2.2f * sy;
+    const float messageWidth =
+        static_cast<float>(message.size()) * 6.0f * messageScale;
+    renderer.drawUiText(std::string(message),
+                        (renderer.width() - messageWidth) * 0.5f,
+                        118.0f * sy, messageScale, {1.0f, 0.85f, 0.0f});
+  }
 }
 
 void UiController::drawOverlay(render::Renderer& renderer,

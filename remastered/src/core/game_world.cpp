@@ -85,6 +85,7 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_cubeShrinkElapsedSeconds = 0.0;
   m_cubeShrinkStartBoundary = kWorldBoundary;
   m_cubeShrinkTargetBoundary = kWorldBoundary;
+  m_cubeConstrainedElapsedSeconds = 0.0;
   clearSoundEvents();
   m_quitRequested = false;
 }
@@ -106,6 +107,7 @@ void GameWorld::previewLevel(int levelIndex)
   m_cubeShrinkElapsedSeconds = 0.0;
   m_cubeShrinkStartBoundary = kWorldBoundary;
   m_cubeShrinkTargetBoundary = kWorldBoundary;
+  m_cubeConstrainedElapsedSeconds = 0.0;
   clearSoundEvents();
   setupLevel();
 }
@@ -263,6 +265,7 @@ void GameWorld::advanceToNextLevel()
   m_cubeShrinkElapsedSeconds = 0.0;
   m_cubeShrinkStartBoundary = kWorldBoundary;
   m_cubeShrinkTargetBoundary = kWorldBoundary;
+  m_cubeConstrainedElapsedSeconds = 0.0;
   setupLevel();
 }
 
@@ -360,10 +363,17 @@ void GameWorld::updateCubeShrink()
   }
 
   if (m_cubeShrinkElapsedSeconds <= 0.0)
+  {
+    m_cubeConstrainedElapsedSeconds = std::max(
+        0.0, m_cubeConstrainedElapsedSeconds - kFixedStepSeconds);
     return;
+  }
 
   m_cubeShrinkElapsedSeconds =
       std::max(0.0, m_cubeShrinkElapsedSeconds - kFixedStepSeconds);
+  const bool finished = m_cubeShrinkElapsedSeconds <= 0.0;
+  if (finished)
+    m_cubeConstrainedElapsedSeconds = 5.0;
   const double boundary =
       m_cubeShrinkStartBoundary +
       (m_cubeShrinkTargetBoundary - m_cubeShrinkStartBoundary) *

@@ -331,11 +331,36 @@ void testLevelTimerAndShield()
 
   world.clearRocks();
   world.stepFixed({});
-   expect(world.levelIndex() == 1 && world.levelElapsedSeconds() == 0.0 &&
+  expect(world.levelIndex() == 1 && world.levelElapsedSeconds() == 0.0 &&
               world.shieldRemainingSeconds() == kShieldMaximumSeconds &&
               world.thrustRemainingSeconds() == kThrustMaximumSeconds &&
               world.fireRemainingSeconds() == kFireMaximumSeconds,
-          "level transition resets timer and resources", test);
+           "level transition resets timer and resources", test);
+
+  GameWorld cubeWorld(18);
+  cubeWorld.startNewGame();
+  cubeWorld.stepFixed({});
+  cubeWorld.clearRocks();
+  cubeWorld.spawnRock(RockSize::Small, RockType::Cube,
+                      {900.0f, 900.0f, 900.0f});
+  for (int step = 0; step < 119 * 60; ++step)
+    cubeWorld.stepFixed({});
+  expect(cubeWorld.cubeShrinkWarningRemainingSeconds() > 0.0,
+         "cube reconfiguration warning starts before shrinking", test);
+  for (int step = 0; step < 1 * 60; ++step)
+    cubeWorld.stepFixed({});
+  cubeWorld.stepFixed({});
+  expect(cubeWorld.cubeReconfiguringRemainingSeconds() > 0.0,
+         "cube reconfiguration starts after warning", test);
+  for (int step = 0; step < 5 * 60; ++step)
+    cubeWorld.stepFixed({});
+  expect(cubeWorld.cubeReconfiguringRemainingSeconds() == 0.0 &&
+             cubeWorld.cubeConstrainedRemainingSeconds() > 4.9,
+         "cube constrained message starts after shrinking", test);
+  for (int step = 0; step < 5 * 60; ++step)
+    cubeWorld.stepFixed({});
+  expect(cubeWorld.cubeConstrainedRemainingSeconds() <= 0.0001,
+         "cube constrained message expires after five seconds", test);
 }
 
 void testFireControl()

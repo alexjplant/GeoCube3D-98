@@ -229,6 +229,14 @@ public:
   double levelElapsedSeconds() const { return m_levelElapsedSeconds; }
   float cubeBoundary() const { return currentCubeBoundary(); }
   double cubeShrinkWarningRemainingSeconds() const;
+  double cubeReconfiguringRemainingSeconds() const
+  {
+    return m_cubeShrinkElapsedSeconds;
+  }
+  double cubeConstrainedRemainingSeconds() const
+  {
+    return m_cubeConstrainedElapsedSeconds;
+  }
   double shieldRemainingSeconds() const { return m_shieldRemainingSeconds; }
   double thrustRemainingSeconds() const { return m_thrustRemainingSeconds; }
   double fireRemainingSeconds() const { return m_fireRemainingSeconds; }
@@ -339,6 +347,7 @@ private:
   double m_cubeShrinkElapsedSeconds = 0.0;
   double m_cubeShrinkStartBoundary = kWorldBoundary;
   double m_cubeShrinkTargetBoundary = kWorldBoundary;
+  double m_cubeConstrainedElapsedSeconds = 0.0;
   std::array<bool, soundEventIndex(SoundEvent::Count)> m_soundEvents{};
   bool m_quitRequested = false;
   CollisionGeometry m_collisionGeometry = defaultCollisionGeometry();

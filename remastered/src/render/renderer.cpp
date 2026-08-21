@@ -803,17 +803,19 @@ void Renderer::drawWorld(const core::GameWorld& world)
   const Mat4 viewProjection = projection * view;
   drawBoundaryGrid(viewProjection);
 
-  drawModel(m_playerModel,
-            translation(player.position) *
-                orientation(player.direction, player.up) *
-                // The imported XOF ship points toward local -Z. Turn it so
-                // local forward is the core direction and the camera sees
-                // the ship's back from the legacy camera position.
-                rotationY(3.14159265359f) * scale(m_playerScale),
-            viewProjection, {1.0f, 1.0f, 1.0f});
-  if (player.shield)
-    drawModel(m_shieldModel, translation(player.position) * scale(1.0f),
-              viewProjection, {1.0f, 0.0f, 0.0f}, GL_LINES);
+  if (world.state() != core::GameState::PlayerHit) {
+    drawModel(m_playerModel,
+              translation(player.position) *
+                  orientation(player.direction, player.up) *
+                  // The imported XOF ship points toward local -Z. Turn it so
+                  // local forward is the core direction and the camera sees
+                  // the ship's back from the legacy camera position.
+                  rotationY(3.14159265359f) * scale(m_playerScale),
+              viewProjection, {1.0f, 1.0f, 1.0f});
+    if (player.shield)
+      drawModel(m_shieldModel, translation(player.position) * scale(1.0f),
+                viewProjection, {1.0f, 0.0f, 0.0f}, GL_LINES);
+  }
 
   for (const core::Rock& rock : world.rocks()) {
     const std::size_t type = static_cast<std::size_t>(rock.type);
