@@ -541,8 +541,11 @@ void UiController::draw(render::Renderer& renderer,
         static_cast<float>(cubeLength.size()) * 6.0f * cubeTextScale;
     renderer.drawUiText("3", cubeTextX + cubeLengthWidth + 1.0f * sx,
                         69.0f * sy, 1.2f * sy, kText);
-    renderer.drawUiText("LIVES " + std::to_string(world.lives()), 760.0f * sx,
-                        12.0f * sy, 3.0f * sy, kText);
+     renderer.drawUiText("FORMS " + std::to_string(world.rocks().size()),
+                         760.0f * sx,
+                         12.0f * sy, 3.0f * sy, kText);
+     renderer.drawUiText("SPARE SHIPS " + std::to_string(world.spareShips()),
+                         760.0f * sx, 44.0f * sy, 2.0f * sy, kText);
     renderer.drawUiText("FIRE", 535.0f * sx, 13.0f * sy, 2.0f * sy, kText);
     const float fireCharge =
         std::clamp(world.fireChargeFraction(), 0.0f, 1.0f);
@@ -565,6 +568,10 @@ void UiController::draw(render::Renderer& renderer,
     renderer.drawUiRect(637.0f * sx, 74.0f * sy,
                         96.0f * sx * shieldCharge, 12.0f * sy, kShield);
     if (world.state() == core::GameState::PlayerHit) {
+      if (world.respawnWaitingForClearance()) {
+        drawOverlay(renderer, "SHIP HIT", "waiting for clearance...");
+        return;
+      }
       const int seconds = static_cast<int>(std::ceil(
           world.playerHitRemainingSeconds()));
       drawOverlay(renderer, "SHIP HIT",

@@ -16,7 +16,7 @@
 
 namespace geocube::core {
 
-inline constexpr int kStartingLives = 3;
+inline constexpr int kStartingSpareShips = 3;
 inline constexpr std::size_t kMaximumBullets = 16;
 inline constexpr double kPlayerHitDelaySeconds = 8.0;
 inline constexpr double kShieldMaximumSeconds = 3.0;
@@ -24,7 +24,7 @@ inline constexpr double kShieldUsageRate = 1.0;
 inline constexpr double kShieldRechargeRate = kShieldUsageRate * 0.10;
 inline constexpr double kThrustMaximumSeconds = 5.0;
 inline constexpr double kThrustUsageRate = 1.0;
-inline constexpr double kThrustRechargeRate = kThrustUsageRate * 0.20;
+inline constexpr double kThrustRechargeRate = kThrustUsageRate * 0.40;
 inline constexpr double kFireMaximumSeconds = 2.0;
 inline constexpr double kFireUsageRate = 1.0;
 inline constexpr double kFireRechargeRate = kFireUsageRate * 0.10;
@@ -218,7 +218,7 @@ public:
   }
 
   int score() const { return m_score; }
-  int lives() const { return m_lives; }
+  int spareShips() const { return m_spareShips; }
   int levelIndex() const { return m_levelIndex; }
   int levelWrap() const { return m_levelWrap; }
   int levelNumber() const { return m_levelIndex + 1 + m_levelWrap * 5; }
@@ -258,6 +258,11 @@ public:
                ? kPlayerHitDelaySeconds - m_playerHitElapsed
                : 0.0;
   }
+  bool respawnWaitingForClearance() const { return m_respawnWaitingForClearance; }
+  float respawnClearanceRadius() const
+  {
+    return currentCubeBoundary() * 2.0f / 5.0f;
+  }
 
   // These operations are also the renderer-independent spawn interface used
   // by level setup and deterministic gameplay tests.
@@ -285,11 +290,14 @@ private:
   void updatePlayerAim(const InputState& input);
   void updatePlayerThrust(const InputState& input);
   void updateBullets();
+  void updateRocks();
   void splitRock(std::size_t rockIndex);
   void handlePlayerCollision(
       const HullTransform& playerStart,
       const std::vector<std::pair<std::uint32_t, HullTransform>>& rockStarts);
   void handlePlayerHit();
+  bool respawnAreaIsClear() const;
+  void respawnPlayer();
   Vec3 randomPosition();
   Vec3 randomVelocity();
   Vec3 randomOffset(float extent);
@@ -309,10 +317,11 @@ private:
   int m_levelIndex = 0;
   int m_levelWrap = 0;
   int m_score = 0;
-  int m_lives = kStartingLives;
+  int m_spareShips = kStartingSpareShips;
   float m_fieldOfView = 0.9f;
   SimulationScheduler m_scheduler;
   double m_playerHitElapsed = 0.0;
+  bool m_respawnWaitingForClearance = false;
   double m_levelElapsedSeconds = 0.0;
   double m_shieldRemainingSeconds = kShieldMaximumSeconds;
   double m_thrustRemainingSeconds = kThrustMaximumSeconds;

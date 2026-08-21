@@ -93,7 +93,7 @@ void testLevelsAndSplitting()
   expect(world.rocks().size() == 1, "level one rock count", test);
   expect(world.currentLevel().largeType == RockType::Cube,
          "level one rock type", test);
-  expect(world.lives() == 3, "starting lives", test);
+   expect(world.spareShips() == 3, "starting spare ships", test);
   expect(world.levelNumber() == 1, "starting level number", test);
 
   GameWorld selectedLevel(43);
@@ -165,10 +165,10 @@ void testStateAndLives()
   world.clearSoundEvents();
   for (int step = 0; step < 480; ++step)
     world.stepFixed({});
-  expect(world.lives() == 2, "life decrement", test);
+   expect(world.spareShips() == 2, "spare ship decrement", test);
   expect(world.state() == GameState::Running, "life reset state", test);
 
-  for (int life = 0; life < 2; ++life) {
+   for (int life = 0; life < 2; ++life) {
     world.clearRocks();
     world.setPlayerPosition({-900.0f, -900.0f, -900.0f});
     world.spawnRock(RockSize::Small, RockType::Cube,
@@ -177,8 +177,28 @@ void testStateAndLives()
     for (int step = 0; step < 480; ++step)
       world.stepFixed({});
   }
-  expect(world.lives() == 0, "game over life count", test);
-  expect(world.state() == GameState::GameOver, "game over state", test);
+   expect(world.spareShips() == 0, "game over spare ship count", test);
+   expect(world.state() == GameState::GameOver, "game over state", test);
+
+   GameWorld blockedRespawn(11);
+   blockedRespawn.startNewGame();
+   blockedRespawn.stepFixed({});
+   blockedRespawn.clearRocks();
+   blockedRespawn.setPlayerPosition({});
+   blockedRespawn.spawnRock(RockSize::Small, RockType::Cube, {});
+   blockedRespawn.stepFixed({});
+   for (int step = 0; step < 480; ++step)
+     blockedRespawn.stepFixed({});
+   expect(blockedRespawn.state() == GameState::PlayerHit &&
+              blockedRespawn.respawnWaitingForClearance(),
+          "respawn waits for center clearance", test);
+   const int blockedLevel = blockedRespawn.levelNumber();
+   blockedRespawn.clearRocks();
+   blockedRespawn.stepFixed({});
+   expect(blockedRespawn.state() == GameState::Running &&
+              blockedRespawn.levelNumber() == blockedLevel &&
+              blockedRespawn.rocks().empty(),
+          "clearance respawn preserves level state", test);
 
   GameWorld shielded(10);
   prepareWorld(shielded);
@@ -299,13 +319,16 @@ void testLevelTimerAndShield()
          "thrust fuel depletes after five seconds", test);
   for (int step = 0; step < 60; ++step)
     thrustWorld.stepFixed({});
-  expect(std::fabs(thrustWorld.thrustRemainingSeconds() - 0.2) < 0.0001,
-         "thrust fuel recharges at twenty percent", test);
+   expect(std::fabs(thrustWorld.thrustRemainingSeconds() - 0.4) < 0.0001,
+          "thrust fuel recharges at forty percent", test);
 
   world.clearRocks();
   world.stepFixed({});
-  expect(world.levelIndex() == 1 && world.levelElapsedSeconds() == 0.0,
-         "timer resets for the next level", test);
+   expect(world.levelIndex() == 1 && world.levelElapsedSeconds() == 0.0 &&
+              world.shieldRemainingSeconds() == kShieldMaximumSeconds &&
+              world.thrustRemainingSeconds() == kThrustMaximumSeconds &&
+              world.fireRemainingSeconds() == kFireMaximumSeconds,
+          "level transition resets timer and resources", test);
 }
 
 void testFireControl()

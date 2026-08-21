@@ -68,10 +68,11 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_levelIndex = std::clamp(startingLevel, 0, 4);
   m_levelWrap = 0;
   m_score = 0;
-  m_lives = kStartingLives;
+  m_spareShips = kStartingSpareShips;
   m_fieldOfView = 0.9f;
   m_scheduler.reset();
   m_playerHitElapsed = 0.0;
+  m_respawnWaitingForClearance = false;
   m_levelElapsedSeconds = 0.0;
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
   m_thrustRemainingSeconds = kThrustMaximumSeconds;
@@ -229,6 +230,14 @@ void GameWorld::setupLevel()
   m_thrustMagnitudeRate = 0.0f;
   m_player.direction = {0.0f, 0.0f, 1.0f};
   m_player.up = {0.0f, 1.0f, 0.0f};
+  m_levelElapsedSeconds = 0.0;
+  m_shieldRemainingSeconds = kShieldMaximumSeconds;
+  m_thrustRemainingSeconds = kThrustMaximumSeconds;
+  m_fireRemainingSeconds = kFireMaximumSeconds;
+  m_fireHeldSeconds = 0.0;
+  m_fireAutoElapsedSeconds = 0.0;
+  m_playerHitElapsed = 0.0;
+  m_respawnWaitingForClearance = false;
 
   const LevelDefinition& level = currentLevel();
   const int extraRocks = 2 * m_levelWrap;
@@ -321,14 +330,7 @@ void GameWorld::updateRunning(const InputState& input)
                         static_cast<float>(kFixedStepSeconds),
                         m_collisionGeometry.player, playerX, playerY,
                         playerZ, currentCubeBoundary());
-  for (Rock& rock : m_rocks) {
-    const float scale = rockScale(rock.type, rock.radius);
-    advanceAndReflectHull(rock.position, rock.velocity,
-                          static_cast<float>(kFixedStepSeconds),
-                          hullForRock(rock.type), {scale, 0.0f, 0.0f},
-                          {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale},
-                          currentCubeBoundary());
-  }
+  updateRocks();
 
   updateBullets();
   handlePlayerCollision(playerStart, rockStarts);
@@ -389,6 +391,18 @@ void GameWorld::updateCubeShrink()
     pushInward(bullet.position, bullet.velocity, m_collisionGeometry.bullet,
                {bulletScale, 0.0f, 0.0f}, {0.0f, bulletScale, 0.0f},
                {0.0f, 0.0f, bulletScale});
+}
+
+void GameWorld::updateRocks()
+{
+  for (Rock& rock : m_rocks) {
+    const float scale = rockScale(rock.type, rock.radius);
+    advanceAndReflectHull(rock.position, rock.velocity,
+                          static_cast<float>(kFixedStepSeconds),
+                          hullForRock(rock.type), {scale, 0.0f, 0.0f},
+                          {0.0f, scale, 0.0f}, {0.0f, 0.0f, scale},
+                          currentCubeBoundary());
+  }
 }
 
 double GameWorld::cubeShrinkWarningRemainingSeconds() const
@@ -701,8 +715,16 @@ void GameWorld::handlePlayerCollision(
     }
 
     emitSoundEvent(SoundEvent::PlayerHit);
+    if (m_spareShips <= 0) {
+      m_state = GameState::GameOver;
+      m_player.velocity = {};
+      clearBullets();
+      return;
+    }
+    --m_spareShips;
     m_state = GameState::PlayerHit;
     m_playerHitElapsed = 0.0;
+    m_respawnWaitingForClearance = false;
     m_player.velocity = {};
     clearBullets();
     return;
@@ -768,18 +790,47 @@ float GameWorld::currentCubeBoundary() const
 void GameWorld::handlePlayerHit()
 {
   m_playerHitElapsed += kFixedStepSeconds;
+  updateRocks();
   if (m_playerHitElapsed + 1.0e-9 < kPlayerHitDelaySeconds)
     return;
 
-  --m_lives;
-  m_playerHitElapsed = 0.0;
-  if (m_lives <= 0) {
+  if (m_spareShips <= 0) {
     m_state = GameState::GameOver;
     return;
   }
 
-  setupLevel();
+  if (!respawnAreaIsClear()) {
+    m_respawnWaitingForClearance = true;
+    return;
+  }
+
+  respawnPlayer();
   m_state = GameState::Running;
+}
+
+bool GameWorld::respawnAreaIsClear() const
+{
+  const float radius = respawnClearanceRadius();
+  for (const Rock& rock : m_rocks) {
+    if (length(rock.position) <= radius + rock.radius)
+      return false;
+  }
+  return true;
+}
+
+void GameWorld::respawnPlayer()
+{
+  m_player.position = {};
+  m_player.direction = {0.0f, 0.0f, 1.0f};
+  m_player.up = {0.0f, 1.0f, 0.0f};
+  m_player.velocity = {};
+  m_player.thrust = {};
+  m_player.shield = false;
+  m_playerHitElapsed = 0.0;
+  m_respawnWaitingForClearance = false;
+  m_fullStopRequested = false;
+  m_velocityMagnitudeRate = 0.0f;
+  m_thrustMagnitudeRate = 0.0f;
 }
 
 Vec3 GameWorld::randomPosition()
