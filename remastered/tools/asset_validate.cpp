@@ -1,4 +1,5 @@
-#include <array>
+#include "platform/asset_manifest.h"
+
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -55,58 +56,37 @@ int main(int argc, char** argv)
   }
 
   const std::filesystem::path root(argv[1]);
-  constexpr std::array meshes{"models/ship.mesh", "models/cube.mesh"};
-  constexpr std::array convertedModels{"ship", "cube", "jack", "portal",
-                                       "sphere3", "pasta"};
-  constexpr std::array bitmaps{"textures/bullet.bmp", "textures/canvas.bmp",
-                               "textures/explode.bmp", "textures/logo.bmp"};
-  constexpr std::array waves{"audio/effects/fire.wav",
-                             "audio/effects/laser.wav",
-                             "audio/effects/thrust.wav",
-                             "audio/effects/shield.wav"};
-  constexpr std::array midi{"audio/music/music.mid", "audio/music/synth.mid",
-                            "audio/music/reggae.mid", "audio/music/spin.mid",
-                            "audio/music/funk.mid"};
-  constexpr const char* soundFont = "audio/music/Roland.SC-55.sf2";
-
   bool valid = true;
-  for (const char* relative : meshes) {
-    if (!isRegular(root / relative) || !isRemasteredMesh(root / relative)) {
-      std::cerr << "Invalid mesh: " << relative << '\n';
+  for (const auto& asset : geocube::platform::kAssetManifest) {
+    if (!asset.native)
+      continue;
+    const std::filesystem::path path = root / asset.path;
+    bool assetValid = isRegular(path);
+    switch (asset.kind) {
+    case geocube::platform::AssetKind::Mesh:
+      assetValid = assetValid && isRemasteredMesh(path);
+      break;
+    case geocube::platform::AssetKind::Wave:
+      assetValid = assetValid && hasPrefix(path, "RIFF");
+      break;
+    case geocube::platform::AssetKind::Midi:
+      assetValid = assetValid && hasPrefix(path, "MThd");
+      break;
+    case geocube::platform::AssetKind::Bitmap:
+      assetValid = assetValid && isBmp(path);
+      break;
+    case geocube::platform::AssetKind::SoundFont:
+      assetValid = assetValid && isSoundFont(path);
+      break;
+    case geocube::platform::AssetKind::Obj:
+    case geocube::platform::AssetKind::Mtl:
+    case geocube::platform::AssetKind::Ogg:
+      break;
+    }
+    if (!assetValid) {
+      std::cerr << "Invalid or missing asset: " << asset.path << '\n';
       valid = false;
     }
-  }
-  for (const char* name : convertedModels) {
-    const std::filesystem::path obj =
-        root / "models" / (std::string(name) + ".obj");
-    const std::filesystem::path mtl =
-        root / "models" / (std::string(name) + ".mtl");
-    if (!isRegular(obj) || !isRegular(mtl)) {
-      std::cerr << "Missing converted model pair: " << name << '\n';
-      valid = false;
-    }
-  }
-  for (const char* relative : bitmaps) {
-    if (!isRegular(root / relative) || !isBmp(root / relative)) {
-      std::cerr << "Invalid BMP: " << relative << '\n';
-      valid = false;
-    }
-  }
-  for (const char* relative : waves) {
-    if (!isRegular(root / relative) || !hasPrefix(root / relative, "RIFF")) {
-      std::cerr << "Invalid WAV: " << relative << '\n';
-      valid = false;
-    }
-  }
-  for (const char* relative : midi) {
-    if (!isRegular(root / relative) || !hasPrefix(root / relative, "MThd")) {
-      std::cerr << "Invalid MIDI inventory asset: " << relative << '\n';
-      valid = false;
-    }
-  }
-  if (!isRegular(root / soundFont) || !isSoundFont(root / soundFont)) {
-    std::cerr << "Invalid SoundFont: " << soundFont << '\n';
-    valid = false;
   }
 
   if (valid)

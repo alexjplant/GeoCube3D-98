@@ -7,6 +7,7 @@
 #include <array>
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace geocube::platform {
@@ -32,6 +33,12 @@ struct Settings {
 
 class SettingsStore final {
 public:
+  SettingsStore() = default;
+  explicit SettingsStore(std::filesystem::path directory)
+      : m_directory(std::move(directory))
+  {
+  }
+
   bool load(Settings& settings);
   bool save(const Settings& settings) const;
   const std::filesystem::path& directory() const { return m_directory; }

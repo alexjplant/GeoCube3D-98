@@ -85,6 +85,7 @@ add_library(geocube_core STATIC
   src/core/game_world.cpp
   src/core/high_scores.cpp
   src/core/hulls.cpp
+  src/core/simulation_scheduler.cpp
 )
 
 target_compile_features(geocube_core PUBLIC cxx_std_17)
@@ -99,6 +100,32 @@ if(NOT EMSCRIPTEN)
     tools/asset_validate.cpp
   )
   target_compile_features(geocube3d_asset_validate PRIVATE cxx_std_17)
+  target_include_directories(geocube3d_asset_validate PRIVATE src)
+  target_link_libraries(geocube3d_asset_validate PRIVATE ${GEOCUBE_SDL3_TARGET})
+
+  add_executable(geocube3d_scheduler_tests
+    tests/scheduler_tests.cpp
+  )
+  target_link_libraries(geocube3d_scheduler_tests PRIVATE geocube_core)
+
+  add_executable(geocube3d_geometry_tests
+    tests/geometry_tests.cpp
+  )
+  target_link_libraries(geocube3d_geometry_tests PRIVATE geocube_core)
+
+  add_executable(geocube3d_asset_manifest_tests
+    tests/asset_manifest_tests.cpp
+  )
+  target_compile_features(geocube3d_asset_manifest_tests PRIVATE cxx_std_17)
+  target_include_directories(geocube3d_asset_manifest_tests PRIVATE src)
+
+  add_executable(geocube3d_settings_tests
+    tests/settings_tests.cpp
+    src/platform/settings.cpp
+  )
+  target_compile_features(geocube3d_settings_tests PRIVATE cxx_std_17)
+  target_include_directories(geocube3d_settings_tests PRIVATE src)
+  target_link_libraries(geocube3d_settings_tests PRIVATE geocube_core ${GEOCUBE_SDL3_TARGET})
   add_executable(geocube3d_model_tests
     tests/model_tests.cpp
     src/render/model_loader.cpp
@@ -120,6 +147,10 @@ if(NOT EMSCRIPTEN)
 
   enable_testing()
   add_test(NAME geocube3d_core COMMAND geocube3d_core_tests)
+  add_test(NAME geocube3d_scheduler COMMAND geocube3d_scheduler_tests)
+  add_test(NAME geocube3d_geometry COMMAND geocube3d_geometry_tests)
+  add_test(NAME geocube3d_asset_manifest COMMAND geocube3d_asset_manifest_tests)
+  add_test(NAME geocube3d_settings COMMAND geocube3d_settings_tests)
   add_test(NAME geocube3d_models
            COMMAND geocube3d_model_tests "${CMAKE_CURRENT_SOURCE_DIR}/assets/models")
 endif()

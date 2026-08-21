@@ -2,6 +2,7 @@
 #include "audio/audio_system.h"
 #include "input/sdl_input.h"
 #include "platform/frame_clock.h"
+#include "platform/asset_manifest.h"
 #include "platform/resource_root.h"
 #include "platform/settings.h"
 #include "platform/sdl_shell.h"
@@ -67,30 +68,16 @@ bool parseOptions(int argc, char** argv, Options& options)
 
 bool validateRemasteredAssets(const std::filesystem::path& root)
 {
-  constexpr std::array requiredAssets{
-      "models/ship.mesh",
-      "models/cube.mesh",
-      "textures/canvas.bmp",
-      "textures/bullet.bmp",
-      "audio/effects/fire.wav",
-#if defined(__EMSCRIPTEN__)
-      "audio/music/music.ogg",
-      "audio/music/synth.ogg",
-      "audio/music/reggae.ogg",
-      "audio/music/spin.ogg",
-      "audio/music/funk.ogg",
-      "audio/music/snare.ogg",
-      "audio/music/wierd.ogg",
-#else
-      "audio/music/music.mid",
-      "audio/music/Roland.SC-55.sf2",
-#endif
-  };
-
   bool valid = true;
-  for (const char* asset : requiredAssets) {
-    if (!geocube::platform::hasAsset(root, asset)) {
-      std::cerr << "Missing remastered asset: " << asset << '\n';
+  for (const auto& asset : geocube::platform::kAssetManifest) {
+#ifdef __EMSCRIPTEN__
+    constexpr bool targetWeb = true;
+#else
+    constexpr bool targetWeb = false;
+#endif
+    if (asset.startup && (targetWeb ? asset.web : asset.native) &&
+        !geocube::platform::hasAsset(root, asset.path)) {
+      std::cerr << "Missing remastered asset: " << asset.path << '\n';
       valid = false;
     }
   }

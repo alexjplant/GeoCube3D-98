@@ -4,6 +4,7 @@
 #include "core/math.h"
 #include "core/convex_hull.h"
 #include "core/collision.h"
+#include "core/simulation_scheduler.h"
 
 #include <array>
 #include <cstddef>
@@ -15,9 +16,6 @@
 
 namespace geocube::core {
 
-inline constexpr double kFixedStepSeconds = 1.0 / 60.0;
-inline constexpr double kMaximumFrameSeconds = 0.25;
-inline constexpr int kMaximumCatchUpSteps = 8;
 inline constexpr int kStartingLives = 3;
 inline constexpr std::size_t kMaximumBullets = 16;
 inline constexpr double kPlayerHitDelaySeconds = 8.0;
@@ -313,7 +311,7 @@ private:
   int m_score = 0;
   int m_lives = kStartingLives;
   float m_fieldOfView = 0.9f;
-  double m_accumulator = 0.0;
+  SimulationScheduler m_scheduler;
   double m_playerHitElapsed = 0.0;
   double m_levelElapsedSeconds = 0.0;
   double m_shieldRemainingSeconds = kShieldMaximumSeconds;

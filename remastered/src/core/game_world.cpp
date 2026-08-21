@@ -70,7 +70,7 @@ void GameWorld::startNewGame(std::string playerName, int startingLevel)
   m_score = 0;
   m_lives = kStartingLives;
   m_fieldOfView = 0.9f;
-  m_accumulator = 0.0;
+  m_scheduler.reset();
   m_playerHitElapsed = 0.0;
   m_levelElapsedSeconds = 0.0;
   m_shieldRemainingSeconds = kShieldMaximumSeconds;
@@ -114,9 +114,8 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
   if (m_quitRequested)
     return;
 
-  const double frameSeconds =
-      std::clamp(elapsedSeconds, 0.0, kMaximumFrameSeconds);
-  m_accumulator += frameSeconds;
+  const SimulationSchedule schedule = m_scheduler.schedule(elapsedSeconds);
+  const double frameSeconds = schedule.frameSeconds;
   m_shieldUpdatedByAdvance = m_state == GameState::Running;
   m_thrustFuelUpdatedByAdvance = m_state == GameState::Running;
   m_fireUpdatedByAdvance = m_state == GameState::Running;
@@ -131,22 +130,14 @@ void GameWorld::advance(double elapsedSeconds, const InputState& input)
   if (m_fireUpdatedByAdvance && canUseResources)
     updateFire(input, frameSeconds);
 
-  int steps = 0;
   bool firstStep = true;
-  while (m_accumulator >= kFixedStepSeconds &&
-         steps < kMaximumCatchUpSteps) {
+  for (int step = 0; step < schedule.fixedSteps; ++step) {
     InputState stepInput = input;
     if (!firstStep)
       stepInput.clearPressed();
     stepFixed(stepInput);
-    m_accumulator -= kFixedStepSeconds;
-    ++steps;
     firstStep = false;
   }
-
-  if (steps == kMaximumCatchUpSteps &&
-      m_accumulator >= kFixedStepSeconds)
-    m_accumulator = 0.0;
   m_shieldUpdatedByAdvance = false;
   m_thrustFuelUpdatedByAdvance = false;
   m_fireUpdatedByAdvance = false;

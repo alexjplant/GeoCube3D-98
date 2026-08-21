@@ -79,7 +79,7 @@ bool SettingsStore::findDirectory()
 
 bool SettingsStore::load(Settings& settings)
 {
-  if (!findDirectory())
+  if (m_directory.empty() && !findDirectory())
     return false;
 
   std::ifstream input(m_directory / "settings.ini");
