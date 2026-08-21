@@ -47,6 +47,8 @@ enum class Action : std::uint8_t {
   AimDown,
   AimLeft,
   AimRight,
+  RollLeft,
+  RollRight,
   ThrustForward,
   ThrustBackward,
   ThrustLeft,

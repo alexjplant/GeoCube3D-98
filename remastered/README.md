@@ -24,6 +24,7 @@ Controls documented by `g_aHelpText` in `src/gameplay.cpp:75-87`:
 | Action | Legacy control |
 | --- | --- |
 | Aim ship up/down/left/right | Arrow keys |
+| Roll left/right | Q / E |
 | Zoom in/out | Page Up / Page Down; numpad 9 / numpad 3 |
 | Thrust forward/backward | W / S |
 | Thrust left/right | A / D |
@@ -31,7 +32,7 @@ Controls documented by `g_aHelpText` in `src/gameplay.cpp:75-87`:
 | Fire | Ctrl |
 | Shield | Left Shift |
 | Pause | Pause key |
-| Full stop | E |
+| Full stop | C |
 | Quit | Escape |
 
 The active code also maps F1 to Help and H to High Scores in

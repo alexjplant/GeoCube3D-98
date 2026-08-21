@@ -23,9 +23,10 @@ constexpr core::Vec3 kShieldTrack{0.06f, 0.10f, 0.18f};
 constexpr core::Vec3 kIndicator{1.0f, 0.0f, 0.0f};
 constexpr float kIndicatorAlpha = 0.5f;
 constexpr float kIndicatorCloseDistance = 20.0f;
-constexpr std::array<core::Action, 17> kConfigurableActions{{
+constexpr std::array<core::Action, 19> kConfigurableActions{{
     core::Action::AimUp, core::Action::AimDown, core::Action::AimLeft,
-    core::Action::AimRight, core::Action::ThrustForward,
+    core::Action::AimRight, core::Action::RollLeft, core::Action::RollRight,
+    core::Action::ThrustForward,
     core::Action::ThrustBackward, core::Action::ThrustLeft,
     core::Action::ThrustRight, core::Action::Fire, core::Action::Shield,
     core::Action::Pause, core::Action::FullStop, core::Action::HighScores,
@@ -139,14 +140,18 @@ UiCommand UiController::handleInput(const core::InputState& input,
       m_waitingForBinding = false;
       command.saveSettings = true;
     }
+    constexpr int resetSelection = static_cast<int>(kConfigurableActions.size());
+    constexpr int selectionCount = resetSelection + 1;
     if (up)
       m_controlSelection =
-          (m_controlSelection + static_cast<int>(kConfigurableActions.size()) -
-           1) % static_cast<int>(kConfigurableActions.size());
+          (m_controlSelection + selectionCount - 1) % selectionCount;
     if (down)
-      m_controlSelection =
-          (m_controlSelection + 1) % static_cast<int>(kConfigurableActions.size());
-    if (anyConfirm(input) && !m_waitingForBinding) {
+      m_controlSelection = (m_controlSelection + 1) % selectionCount;
+    if (anyConfirm(input) && !m_waitingForBinding &&
+        m_controlSelection == resetSelection) {
+      m_settings.controls = platform::defaultControlBindings();
+      command.saveSettings = true;
+    } else if (anyConfirm(input) && !m_waitingForBinding) {
       m_waitingForBinding = true;
       command.captureControl = true;
     }
@@ -204,6 +209,7 @@ UiCommand UiController::handleInput(const core::InputState& input,
     if (anyConfirm(input)) {
       if (m_pauseSelection == 0) {
         m_screen = m_previousScreen;
+        command.resumeGame = true;
       } else if (m_pauseSelection == 1) {
         command.endGame = true;
         m_screen = Screen::MainMenu;
@@ -595,10 +601,10 @@ void UiController::draw(render::Renderer& renderer,
                         kPanel);
     renderer.drawUiText("CONTROLS", 130.0f * sx, 105.0f * sy, 5.0f * sy,
                         kText);
-    for (std::size_t i = 0; i < kConfigurableActions.size(); ++i) {
+     for (std::size_t i = 0; i < kConfigurableActions.size(); ++i) {
       const core::Action action = kConfigurableActions[i];
-      const int column = static_cast<int>(i / 9);
-      const int row = static_cast<int>(i % 9);
+       const int column = static_cast<int>(i / 10);
+       const int row = static_cast<int>(i % 10);
       const float x = (110.0f + column * 400.0f) * sx;
       const float y = (185.0f + row * 38.0f) * sy;
       std::string line = static_cast<int>(i) == m_controlSelection ? "> " : "  ";
@@ -608,7 +614,13 @@ void UiController::draw(render::Renderer& renderer,
                           static_cast<int>(i) == m_controlSelection
                               ? kHighlight
                               : kText);
-    }
+     }
+     const int resetSelection = static_cast<int>(kConfigurableActions.size());
+     renderer.drawUiText(
+         m_controlSelection == resetSelection ? "> RESET TO DEFAULT"
+                                               : "  RESET TO DEFAULT",
+         110.0f * sx, 185.0f * sy + 10.0f * 38.0f * sy, 2.2f * sy,
+         m_controlSelection == resetSelection ? kHighlight : kText);
     renderer.drawUiText(m_waitingForBinding ? "PRESS A KEY TO BIND"
                                            : "ENTER REBIND   ESCAPE BACK",
                         130.0f * sx, 600.0f * sy, 2.2f * sy, kText);

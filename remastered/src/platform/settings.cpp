@@ -18,6 +18,8 @@ ControlBindings defaultControlBindings()
   set(core::Action::AimDown, "Down");
   set(core::Action::AimLeft, "Left");
   set(core::Action::AimRight, "Right");
+  set(core::Action::RollLeft, "Q");
+  set(core::Action::RollRight, "E");
   set(core::Action::ThrustForward, "W");
   set(core::Action::ThrustBackward, "S");
   set(core::Action::ThrustLeft, "A");
@@ -25,7 +27,7 @@ ControlBindings defaultControlBindings()
   set(core::Action::Fire, "Space");
   set(core::Action::Shield, "Left Shift");
   set(core::Action::Pause, "Pause");
-  set(core::Action::FullStop, "E");
+  set(core::Action::FullStop, "C");
   set(core::Action::HighScores, "H");
   set(core::Action::Quit, "Escape");
   set(core::Action::ZoomIn, "R");
@@ -42,6 +44,8 @@ const char* controlActionName(core::Action action)
   case core::Action::AimDown: return "Aim Down";
   case core::Action::AimLeft: return "Aim Left";
   case core::Action::AimRight: return "Aim Right";
+  case core::Action::RollLeft: return "Roll Left";
+  case core::Action::RollRight: return "Roll Right";
   case core::Action::ThrustForward: return "Thrust Forward";
   case core::Action::ThrustBackward: return "Thrust Backward";
   case core::Action::ThrustLeft: return "Thrust Left";

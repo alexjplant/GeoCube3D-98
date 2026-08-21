@@ -263,8 +263,15 @@ void testFixedStepAndControls()
   InputState aim;
   aim.setHeld(Action::AimRight, true);
   world.stepFixed(aim);
-  expect(!nearlyEqual(directionBeforeAim, world.player().direction),
-         "arrow aim changes ship direction", test);
+   expect(!nearlyEqual(directionBeforeAim, world.player().direction),
+          "arrow aim changes ship direction", test);
+
+   const Vec3 upBeforeRoll = world.player().up;
+   InputState roll;
+   roll.setHeld(Action::RollLeft, true);
+   world.stepFixed(roll);
+   expect(!nearlyEqual(upBeforeRoll, world.player().up),
+          "barrel roll changes ship up vector", test);
 
   expect(kWorldBoundary == 1000.0f, "legacy world boundary", test);
   expectNear(kMaxVelocity, 100.0f * 1000.0f / 60.0f,

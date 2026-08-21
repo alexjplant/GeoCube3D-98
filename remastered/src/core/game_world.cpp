@@ -438,6 +438,13 @@ void GameWorld::updatePlayerAim(const InputState& input)
     m_player.direction = rotateAroundAxis(m_player.direction, right, pitch);
     m_player.up = rotateAroundAxis(m_player.up, right, pitch);
   }
+  float roll = 0.0f;
+  if (input.isHeld(Action::RollLeft))
+    roll += kRotationSpeedRadians * static_cast<float>(kFixedStepSeconds);
+  if (input.isHeld(Action::RollRight))
+    roll -= kRotationSpeedRadians * static_cast<float>(kFixedStepSeconds);
+  if (roll != 0.0f)
+    m_player.up = rotateAroundAxis(m_player.up, m_player.direction, roll);
   normalizePlayerOrientation();
 }
 

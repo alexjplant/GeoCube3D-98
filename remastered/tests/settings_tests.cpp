@@ -31,8 +31,12 @@ int main()
          "right thrust default");
   expect(controls[geocube::core::actionIndex(geocube::core::Action::Shield)] == "Left Shift",
          "shield default");
-  expect(controls[geocube::core::actionIndex(geocube::core::Action::FullStop)] == "E",
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::FullStop)] == "C",
          "full stop default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::RollLeft)] == "Q",
+         "roll left default");
+  expect(controls[geocube::core::actionIndex(geocube::core::Action::RollRight)] == "E",
+         "roll right default");
   expect(controls[geocube::core::actionIndex(geocube::core::Action::ZoomIn)] == "R",
          "zoom in default");
   expect(controls[geocube::core::actionIndex(geocube::core::Action::ZoomOut)] == "F",
